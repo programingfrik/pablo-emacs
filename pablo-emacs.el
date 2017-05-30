@@ -404,7 +404,6 @@ The function should take a list like this:
 (defun set-column-info (column-list pos type)
   "Sets the info of a column in a list of items"
   (let ((value (nth pos column-list)))
-    (message (format "set-column-info %s %i %s" column-list pos type))
     (if value
         (if (or (and (equal value 'number) (equal type 'string))
                 (equal value 'unknown))
@@ -413,7 +412,6 @@ The function should take a list like this:
         (while (< (length column-list) (1+ pos))
           (setq column-list (reverse (cons nil (reverse column-list)))) )
         (setcar (nthcdr pos column-list) type)
-        (message (format "%i %s" (length column-list) column-list))
         )
       )
     column-list
@@ -457,7 +455,6 @@ Right now it doesn't sopport comma characters as values embeded in quotes.
       (goto-char start)
       (while (re-search-forward lineexp end 't)
         (setq line (match-string-no-properties 0))
-        (message line)
         (setq column-count 0)
         ;; Find the number of columns in this row
         ;; For each column check if its only numbers or if it has alphanumeric characters.
@@ -470,7 +467,6 @@ Right now it doesn't sopport comma characters as values embeded in quotes.
                   (and (string-prefix-p "\"" value)
                        (string-suffix-p "\"" value)))
               (setq value (substring value 1 (1- (length value)))) )
-          (message value)
           ;; If the value is "NULL" then we have nothing else to check
           (if (or (string-match-p "NULL" value)
                   (string-match-p numexp value))
@@ -479,12 +475,10 @@ Right now it doesn't sopport comma characters as values embeded in quotes.
           (setq column-count (1+ column-count)) )
         (setq row-count (1+ row-count))
       )
-      (message (format "listo columns %s" columns))
       ;; Replace each row with a select taking into account the number of fields it should have
       (goto-char start)
       (while (re-search-forward lineexp end 't)
         (setq line (match-string-no-properties 0))
-        (message line)
         (setq start-line (match-beginning 0))
         (setq end-line (match-end 0))
         (setq values (split-string line ","))
@@ -509,7 +503,6 @@ Right now it doesn't sopport comma characters as values embeded in quotes.
         (setq line (substring line 0 (- (length line) 2)))
         (if (not (= row-count 1))
             (setq line (concat line " union all")) )
-        (message line)
         (delete-region start-line end-line)
         (goto-char start-line)
         (insert line)
