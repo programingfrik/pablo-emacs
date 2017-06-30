@@ -399,8 +399,6 @@ The function should take a list like this:
     )
   )
 
-;; TODO: una función que transforme una lista de valores separados por coma en selects con union con el fin de convertirlos en un insert.
-
 (defun set-column-info (column-list pos type)
   "Sets the info of a column in a list of items"
   (let ((value (nth pos column-list)))
