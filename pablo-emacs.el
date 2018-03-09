@@ -511,3 +511,12 @@ Right now it doesn't sopport comma characters as values embeded in quotes.
       )
     )
   )
+
+(defun write-note-separator ()
+  "Function that I use to write separation between the entries of notes of some kind of diary on a text file."
+  (interactive)
+  (let ((time-now (decode-time)))
+    (insert (format "\n%02d-%02d-%04d ----------------------------------------------------\n"
+                    (nth 3 time-now) (nth 4 time-now) (nth 5 time-now) ))
+    )
+  )
