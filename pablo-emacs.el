@@ -95,10 +95,17 @@ Si se trata de un fichero o un directorio lo abre en el propio Emacs.
             ((string-match-p "\\`https?://" texto)
              (browse-url texto))
             ; si no, entonces se trata de un fichero.
-                                        ; not starting 'http://"
+            ; not starting 'http://"
             ('t
-             (progn 
-               (setq reemplazado (replace-regexp-in-string "\([[:alpah:]]\):\\")
+             (progn
+               (if (or (string-match-p "^[[:alpha:]]:\\\\" "c:\\pablo\\pollo")
+                       (string-match-p ".+\\(\\\\.*\\)+" ""))
+                   (progn
+                     (setq reemplazado (replace-regexp-in-string
+                                        "^\\([[:alpha:]]\\):\\\\\\(.*\\)$"
+                                        "/cygdrive/\\1/\\2" texto ))
+                     (setq reemplazado (replacesregexp-in-string
+                                        "\\\\" "/" reemplazado ))))
                (cond ((file-exists-p texto)
                       (find-file texto))
                      ((file-exists-p (concat texto ".el"))
