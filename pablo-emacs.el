@@ -98,14 +98,15 @@ Si se trata de un fichero o un directorio lo abre en el propio Emacs.
             ; not starting 'http://"
             ('t
              (progn
-               (if (or (string-match-p "^[[:alpha:]]:\\\\" "c:\\pablo\\pollo")
-                       (string-match-p ".+\\(\\\\.*\\)+" ""))
+               (if (and (equal system-type 'cygwin)
+                    (or (string-match-p "^[[:alpha:]]:\\\\" texto)
+                        (string-match-p "^\\(\\\\\\\\\\)?[^\\\\]+\\(\\\\.*\\)+" texto) ))
                    (progn
-                     (setq reemplazado (replace-regexp-in-string
+                     (setq texto (replace-regexp-in-string
                                         "^\\([[:alpha:]]\\):\\\\\\(.*\\)$"
                                         "/cygdrive/\\1/\\2" texto ))
-                     (setq reemplazado (replacesregexp-in-string
-                                        "\\\\" "/" reemplazado ))))
+                     (setq texto (replace-regexp-in-string
+                                        "\\\\" "/" texto ))))
                (cond ((file-exists-p texto)
                       (find-file texto))
                      ((file-exists-p (concat texto ".el"))
