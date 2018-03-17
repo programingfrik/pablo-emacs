@@ -102,6 +102,9 @@ Si se trata de un fichero o un directorio lo abre en el propio Emacs.
                     (or (string-match-p "^[[:alpha:]]:\\\\" texto)
                         (string-match-p "^\\(\\\\\\\\\\)?[^\\\\]+\\(\\\\.*\\)+" texto) ))
                    (progn
+                     ;; si estamos en cygwin y se trata de una ruta
+                     ;; estilo windows hay que transformarla a algo
+                     ;; que entienda cygwin
                      (setq texto (replace-regexp-in-string
                                         "^\\([[:alpha:]]\\):\\\\\\(.*\\)$"
                                         "/cygdrive/\\1/\\2" texto ))
