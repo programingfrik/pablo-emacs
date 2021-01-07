@@ -51,6 +51,7 @@ Si encuentra la variable en texto pone su valor en la variable, si no pone una c
 ;; Modificando de la función "open-file-at cursor" que se encuentra en:
 ;; http://ergoemacs.org/emacs/emacs_open_file_path_fast.html
 ;; Cree esta función ...
+;; TODO: También se podría hacer que cuando a esta función se ejecute estando sobre un texto de la forma AppSettings["configuracion"] que emacs habra el fichero "web.config" correspondiente y ponga point en la configuración.
 (defun abrir-cosa ()
   "Abre la \"cosa\" que esté bajo el cursor.
 Si se trata de un connection string se conecta a la base de datos.
@@ -328,7 +329,7 @@ current path and puts it on a command to build that project."
         (let ((project (get-vsproject-here buffer-file-name 'nil)) )
           (when (not project)
             (setq project "(no project.csproj or project.sln found)"))
-          (setq compile-command (concat "/cygdrive/d/comun/codigo/lang/bat/construirvs2013.bat " project))
+          (setq compile-command (concat "/cygdrive/d/comun/codigo/lang/bat/construirvs2019.bat " project))
           ))
     ;; any way, call the compile command.
     (call-interactively 'compile)
