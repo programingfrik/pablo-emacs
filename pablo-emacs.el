@@ -76,6 +76,7 @@ Si encuentra la variable en texto pone su valor en la variable, si no pone una c
 ;; Modificando de la función "open-file-at cursor" que se encuentra en:
 ;; http://ergoemacs.org/emacs/emacs_open_file_path_fast.html
 ;; Cree esta función ...
+;; TODO: También se podría hacer que cuando a esta función se ejecute estando sobre un texto de la forma AppSettings["configuracion"] que emacs habra el fichero "web.config" correspondiente y ponga point en la configuración.
 (defun abrir-cosa ()
   "Abre la \"cosa\" que esté bajo el cursor.
 Si se trata de un connection string se conecta a la base de datos.
@@ -120,14 +121,28 @@ Si se trata de un fichero o un directorio lo abre en el propio Emacs.
             ((string-match-p "\\`https?://" texto)
              (browse-url texto))
             ; si no, entonces se trata de un fichero.
+            ; not starting 'http://"
             ('t
-             (progn ; not starting 'http://"
-               (if (file-exists-p texto)
-                   (find-file texto)
-                 (if (file-exists-p (concat texto ".el"))
-                     (find-file (concat texto ".el"))
-                   (when (y-or-n-p (format "El fichero \"%s\" no existe. ¿Lo creo?" texto) )
-                     (find-file texto )) ) ) ))
+             (progn
+               (if (and (equal system-type 'cygwin)
+                    (or (string-match-p "^[[:alpha:]]:\\\\" texto)
+                        (string-match-p "^\\(\\\\\\\\\\)?[^\\\\]+\\(\\\\.*\\)+" texto) ))
+                   (progn
+                     ;; si estamos en cygwin y se trata de una ruta
+                     ;; estilo windows hay que transformarla a algo
+                     ;; que entienda cygwin
+                     (setq texto (replace-regexp-in-string
+                                        "^\\([[:alpha:]]\\):\\\\\\(.*\\)$"
+                                        "/cygdrive/\\1/\\2" texto ))
+                     (setq texto (replace-regexp-in-string
+                                        "\\\\" "/" texto ))))
+               (cond ((file-exists-p texto)
+                      (find-file texto))
+                     ((file-exists-p (concat texto ".el"))
+                      (find-file (concat texto ".el")))
+                     ((y-or-n-p (format "El fichero \"%s\" no existe. ¿Lo creo?" texto) )
+                      (find-file texto ) )))
+             )
             )
       )
     )
@@ -339,7 +354,7 @@ current path and puts it on a command to build that project."
         (let ((project (get-vsproject-here buffer-file-name 'nil)) )
           (when (not project)
             (setq project "(no project.csproj or project.sln found)"))
-          (setq compile-command (concat "/cygdrive/d/comun/codigo/lang/bat/construirvs2013.bat " project))
+          (setq compile-command (concat "/cygdrive/d/comun/codigo/lang/bat/construirvs2019.bat " project))
           ))
     ;; any way, call the compile command.
     (call-interactively 'compile)
