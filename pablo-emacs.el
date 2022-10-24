@@ -48,6 +48,31 @@ Si encuentra la variable en texto pone su valor en la variable, si no pone una c
       (while (and nombres (string= (buscar-valor (car nombres) (car mapa) texto) ""))
         (setq nombres (cdr nombres)) ) ) ) )
 
+
+;; "\[\([^]]+\)\]  \( \[[^]]*\]  \|  ( \([^) ]+\)\( *\"[^"]+\" *\)?) \)?"
+
+;; "\[\([^]]+\)\]"  [ejemplo]   Reference link
+;; "[][]"   [otro ejemplo][]    Reference link
+;; "[][]"   [ejemplo diferente][EjemploDiferente]
+;; "[]()"   [google](http://google.com/)
+;; "[]()"   [prueba](http://otro.url.com/ "un titulo")
+;; "[]()"   [probando](relative/path/to/index.html "otro título")
+;; "[]()"   [sigo probando](fichero.html)
+;; "[]()"   [probando referencias](@ref UnaReferencia)
+
+;; "[ejemplo]:       http://yajoo.com"
+;; "[otro ejemplo]:  http://blender3d.org  "la página de blender""
+;; "[otro ejemplo]:  relative/path/to/index.html "otro título""
+;; "[otro ejemplo]:  fichero.html"
+;; "[otro ejemplo]:  @ref UnaReferencia"
+
+;; (defun ir-md-link (texto)
+;;   "Sigue un link de mark down al estilo de doxygen.
+;; Si se trata de una referencia a otra parte de este mismo, o de otro documento mueve el cursor a ese punto. Si se trata de un link de internet abre el link en el browser"
+;;   (
+;; 
+;;   )
+
 ;; Modificando de la función "open-file-at cursor" que se encuentra en:
 ;; http://ergoemacs.org/emacs/emacs_open_file_path_fast.html
 ;; Cree esta función ...
@@ -520,3 +545,185 @@ Right now it doesn't sopport comma characters as values embeded in quotes.
                     (nth 3 time-now) (nth 4 time-now) (nth 5 time-now) ))
     )
   )
+
+(defun traer-linea-reversa (final)
+  "Trae una linea de texto del buffer dado su final."
+  (let ((pos final))
+    (goto-char (1- pos))
+    (setq pos (1+ (re-search-backward "$")))
+    (message "Linea: inicio %i final %i longitud %i" pos final (- final pos))
+    (list pos final (- final pos)) ) )
+
+(defun flanco-negativo-p (linant linact)
+  "Detecta si hay un flanco negativo en las longitudes de las lineas."
+  (let ((tol 3))
+    (and (> (nth 2 linant) tol) (<= (nth 2 linact) tol)) ) )
+
+(defun detectar-inicio-fin-area-tabla (limini limfin)
+  "Para determinar donde inicia y donde termina el area en la que se encuentra la tabla."
+  (let ((pos limfin) linact linant (tol 3))
+    ;; Colocate al final
+    (goto-char pos)
+    (setq linact (traer-linea-reversa pos)
+          pos (nth 0 linact)
+          linant linact)
+    (while (and (not (flanco-negativo-p linant linact))
+                (> pos limini))
+      (setq linant linact
+            linact (traer-linea-reversa (1- pos))
+            pos (nth 0 linact)) )
+    (list (nth 0 linant) limfin) ) )
+
+(defun detectar-inicio-fin-tabla (limini limfin)
+  "Determinar exactamente el primir y último caracter de la tabla."
+  (let ((cantl 3) (tol 3) (cont 0) linact linant inicio final ancho)
+    ;; Busca un conjunto de 3 o más lineas seguidas que tengan la misma longitud.
+    (setq pos (if (> limfin (point-max))
+                  (1+ (point-max))
+                limfin ) )
+    (goto-char pos)
+    (setq linact (traer-linea-reversa pos)
+          pos (nth 0 linact)
+          linant linact)
+    ;; Recorre toda el area en reversa linea por linea tomando la longitud de cada linea.
+    (while (and (or (< cont cantl)
+                    (not (flanco-negativo-p linant linact)))
+                (> pos limini))
+      (setq linant linact
+            linact (traer-linea-reversa (1- pos))
+            pos (nth 0 linact))
+      (if (and (> cont 0) (= (nth 2 linant) (nth 2 linact)))
+          (progn ;; (message "Encontré otra linea!")
+            (setq cont (1+ cont)) )
+        (if (and (> (nth 2 linact) tol) (= (nth 2 linant) (nth 2 linact)))
+            (progn ;; (message "Encontré 2 lienas iguales!!")
+              (setq cont 2
+                    final (nth 1 linant)
+                    ancho (- (nth 1 linact) (nth 0 linact))) ) ) ) )
+    ;; (message "Cerró el bucle!")
+    (setq inicio (nth 0 linant))
+    (list inicio final ancho cont) ) )
+
+(defun detectar-divisiones-tabla (inicio final ancho alto)
+  "Encuentra las columnas que son divisiones de columna."
+  (let ((divisiones (list)) (linea 0) (pos 0))
+    (dotimes (col (1- ancho))
+      (message "col %i" col)
+      (setq linea 0
+            pos (+ (* linea ancho) inicio col))
+      (message "Posición %i char %S" pos (char-after pos))
+      (while (and (< linea alto)
+                  (char-equal (char-after pos) (aref " " 0)))
+        (message "linea %i" linea)
+        (setq linea (1+ linea)
+              pos (+ (* linea ancho) inicio col))
+        (message "Posición %i char %S" pos (char-after pos))
+        )
+      (when (>= linea alto)
+        (message "Encontré una división %i" col)
+        (setq divisiones (appned divisiones (list col)))
+        (message "Divisiones %s" divisiones)
+        ) )
+    divisiones ) )
+
+(defun longitud-match (expresion texto)
+  "Retorna la cantidad de caracteres que cubrió el match si lo hubo, si no hubo match retorna 0"
+  (if (string-match expresion texto) (length (match-string 0 texto)) 0) )
+
+(defun detectar-espacios-blanco-tabla (initab fintab ancho alto divisiones)
+  "Una función que detecta cuanto espacio hay en una columna que se puede recortar y hacia donde está alineada."
+  (let ((espacios (list)) minesp linea ini fin lon textocel espini espfin cantesp)
+    (dotimes (col (1- (length divisiones)))
+      (setq minesp ancho
+            linea 0)
+      (while (and (< linea alto)
+                  (> minesp 0))
+        ;; Toma el inicio de la división.
+        (setq ini (+ (* linea ancho) (nth col divisiones) 1 initab)
+              ;; Toma el final de la división.
+              fin (+ (* linea ancho) (nth (1+ col) divisiones) initab)
+              ;; Toma la longitud de la celda.
+              lon (- fin ini)
+              ;; Toma el texto de la celda.
+              textocel (buffer-substring-no-properties ini fin) )
+        ;; (message "ini %i fin %i lon %i textocel \"%s\"" ini fin lon textocel)
+        ;; Si no es una celda llena de guiones.
+        (when (not (= (longitud-match "^-+$" textocel) lon) )
+          ;; Toma la cantidad de espacios al inicio y al final.
+          (setq espini (longitud-match "^ +" textocel)
+                espfin (longitud-match " +$" textocel)
+                cantesp (+ espini espfin) )
+          ;; (message "espini %i espfin %i cantesp %i" espini espfin cantesp)
+          (if (or (= linea 0) (< cantesp minesp))
+              (setq minesp cantesp) ) )
+        (setq linea (1+ linea)) )
+      (setq espacios (append espacios (list minesp))) )
+    espacios ) )
+
+(defun recortar-espacios-tabla (initab fintab ancho alto divisiones espacio)
+  "Recorta los espacios de la tabla."
+  (let (filar colr ini fin lon textocel)
+    (dotimes (fila alto)
+      (setq filar (-alto fila 1))
+      ;; (message "fila %i filar %i" fila filar)
+      (dotimes (col (length espacios))
+        (setq colr (- (length espacios) col 1)
+              ini (+ (* filar ancho) (nth colr divisiones) 1 initab)
+              ;; (message "colr %i ini %i" colr ini)
+              fin (+ (* filar ancho) (nth (1+ colr) divisiones) initab)
+              ;; (message "colr %i ini %i fin %i" colr ini fin)
+              lon (- fin ini)
+              textocel (buffer-substring-no-properties ini fin)
+              espacio (nth colr espacios))
+        ;; (message "fila %i filar %i col %i colr %i ini %i fin %i lon %i textocel \"%s\" espacio %i" fila filar col colr ini fin lon textocel espacio)
+        (when (and (> espacio 0)
+                   (or (string-match (format "^ \\{%i\\}" espacio) textocel)
+                       (string-match (format " \\{%i\\}$" espacio) textocel)
+                       (string-match (format "-\\{%i\\}$" espacio) textocel) ) )
+          ;; (message "Eliminando espacios")
+          (setq textocel (replace-match "" nil 't textocel))
+          (delete-region ini fin)
+          (goto-char ini)
+          (insert textocel) ) ) ) ) )
+
+(defun repair-sqltables-ms (&optional start end)
+  "A function to repair a table output from osql on a sqli buffer."
+  (interactive
+   (list
+    (if (use-region-p) (region-beginning))
+    (if (use-region-p) (region-end)) ) )
+  (save-excursion
+    (let (initab fintab resultado divisiones espacios)
+      ;; Si el usuario proporciona una región hay que señirse a esa región.
+      ;; Verifica si la región está activa.
+      (if (use-region-p)
+          ;; Determina el area que ocupa la tabla. Buscando asia atras.
+          (setq resultado (detectar-inicio-fin-area-tabla start end))
+        (setq resultado (detectar-inicio-fin-area-tabla (point-min) (point))) )
+      (setq initab (nth 0 resultado)
+            fintab (nth 1 resultado))
+      (message "inicio-tabla %i fin-tabla %i" initab fintab)
+      ;; Quitale todas las propiedades al texto de la tabla.
+      (set-text-properties initab fintab nil)
+      ;; Si los registros están truncados combina sus partes de forma que queden en una linea por registro.
+      (replace-regexp-in-region " \n\t" " " initab fintab)
+      ;; Ahora cada registro de la tabla debería estar en una linea y todas las lineas que conforman la tabla deberían tener la misma longitud.
+      ;; Revisa donde realmente inicia y termina la tabla.
+      (setq resultado (detectar-inicio-fin-tabla initab fintab)
+            initab (nth 0 resultado)
+            fintab (nth 1 resultado)
+            ancho (1+ (nth 2 resultado))
+            alto (nth 3 resultado))
+      (message "inicio-tabla %i fin-tabla %i ancho %i alto %i" initab fintab ancho alto)
+      ;; Recorre toda el área, establece donde se dividen las columnas o sea su ancho.
+      (setq divisiones (detectar-divisiones-tabla initab fintab ancho alto))
+      (message "divisiones %s" divisiones)
+      ;; Recorre toda la tabla establece que tanto espacio se puede recortar de cada columna.
+      (setq espacios (detectar-espacios-blanco-tabla
+                      initab fintab ancho alto divisiones))
+      (message "espacios %s")
+      ;; Recorta todo el espacio en blanco posible.
+      (recortar-espacios-tabla initab fintab ancho alto divisiones espacios) ) ) )
+         
+            
+          
