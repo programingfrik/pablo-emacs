@@ -611,7 +611,7 @@ Right now it doesn't sopport comma characters as values embeded in quotes.
           (progn ;; (message "Encontré otra linea!")
             (setq cont (1+ cont)) )
         (if (and (> (nth 2 linact) tol) (= (nth 2 linant) (nth 2 linact)))
-            (progn ;; (message "Encontré 2 lienas iguales!!")
+            (progn ;; (message "Encontré 2 lineas iguales!!")
               (setq cont 2
                     final (nth 1 linant)
                     ancho (- (nth 1 linact) (nth 0 linact))) ) ) ) )
@@ -636,7 +636,7 @@ Right now it doesn't sopport comma characters as values embeded in quotes.
         )
       (when (>= linea alto)
         (message "Encontré una división %i" col)
-        (setq divisiones (appned divisiones (list col)))
+        (setq divisiones (append divisiones (list col)))
         (message "Divisiones %s" divisiones)
         ) )
     divisiones ) )
@@ -645,7 +645,7 @@ Right now it doesn't sopport comma characters as values embeded in quotes.
   "Retorna la cantidad de caracteres que cubrió el match si lo hubo, si no hubo match retorna 0"
   (if (string-match expresion texto) (length (match-string 0 texto)) 0) )
 
-(defun detectar-espacios-blanco-tabla (initab fintab ancho alto divisiones)
+(defun detectar-espacios-blancos-tabla (initab fintab ancho alto divisiones)
   "Una función que detecta cuanto espacio hay en una columna que se puede recortar y hacia donde está alineada."
   (let ((espacios (list)) minesp linea ini fin lon textocel espini espfin cantesp)
     (dotimes (col (1- (length divisiones)))
@@ -675,11 +675,11 @@ Right now it doesn't sopport comma characters as values embeded in quotes.
       (setq espacios (append espacios (list minesp))) )
     espacios ) )
 
-(defun recortar-espacios-tabla (initab fintab ancho alto divisiones espacio)
+(defun recortar-espacios-tabla (initab fintab ancho alto divisiones espacios)
   "Recorta los espacios de la tabla."
-  (let (filar colr ini fin lon textocel)
+  (let (filar colr ini fin lon textocel espacio)
     (dotimes (fila alto)
-      (setq filar (-alto fila 1))
+      (setq filar (- alto fila 1))
       ;; (message "fila %i filar %i" fila filar)
       (dotimes (col (length espacios))
         (setq colr (- (length espacios) col 1)
@@ -734,11 +734,9 @@ Right now it doesn't sopport comma characters as values embeded in quotes.
       (setq divisiones (detectar-divisiones-tabla initab fintab ancho alto))
       (message "divisiones %s" divisiones)
       ;; Recorre toda la tabla establece que tanto espacio se puede recortar de cada columna.
-      (setq espacios (detectar-espacios-blanco-tabla
+      (setq espacios (detectar-espacios-blancos-tabla
                       initab fintab ancho alto divisiones))
-      (message "espacios %s")
+      (message "espacios %s" espacios)
       ;; Recorta todo el espacio en blanco posible.
       (recortar-espacios-tabla initab fintab ancho alto divisiones espacios) ) ) )
-         
-            
-          
+
