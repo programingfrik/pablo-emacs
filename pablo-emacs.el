@@ -4,7 +4,7 @@
 To hide the values of those variables this function puts them on temporal variables temp_http_proxy and temp_https_proxy. If the optional parameter, put-back, is given a non-nil value the values of the temp variables are put back in the http_proxy environment values. I created this function because curl calls to omnisharp block when they pass through cntlm proxy."
   (interactive "P")
   (if put-back
-      (progn 
+      (progn
         (when (getenv "temp_http_proxy")
           (setenv "http_proxy" (getenv "temp_http_proxy") nil)
           (setenv "temp_http_proxy" nil nil)
@@ -70,7 +70,7 @@ Si encuentra la variable en texto pone su valor en la variable, si no pone una c
 ;;   "Sigue un link de mark down al estilo de doxygen.
 ;; Si se trata de una referencia a otra parte de este mismo, o de otro documento mueve el cursor a ese punto. Si se trata de un link de internet abre el link en el browser"
 ;;   (
-;; 
+;;
 ;;   )
 
 ;; Modificando de la función "open-file-at cursor" que se encuentra en:
@@ -163,7 +163,7 @@ On Nextstep, put TEXT in the pasteboard (`x-select-enable-clipboard'
 is not used).
 
 Esta versión fue modificada por Pablo Mercader Alcántara para que
- permita copiar texto al clipboard desde la consola como se 
+ permita copiar texto al clipboard desde la consola como se
 permitia en la versión 23 de Emacs."
   (cond ((or (eq (framep (selected-frame)) 'w32)
              (and (eq (framep (selected-frame)) 't) (equal system-type 'windows-nt)))
@@ -199,7 +199,7 @@ Creada por Pablo Mercader Alcántara"
     ;; Obtengo el nombre del fichero que contiene el buffer actualmente
     (let ((fichero (buffer-file-name))
           (pos nil))
-      
+
       ;; Si el nombre está en la forma nombre.ext1.ext2 donde ext1 es
       ;; ascx o aspx trato de abrir el fichero nombre.ext1
       (cond ((string-match
@@ -263,7 +263,7 @@ This function takes point to the definition of the CSharp function in the curren
 
       ;; Build a regexp to search for the definition.
       (setq searchexp (concat fname "[ \n\r\t]*([^)]*)[ \n\r\t]*{"))
-      
+
       ;; Take me to the place in this buffer where the regexp matches.
       (goto-char (point-max))
       (setq found (re-search-backward searchexp nil t))
@@ -300,61 +300,59 @@ This function takes point to the definition of the CSharp function in the curren
     )
   )
 
-(defun select-sln-csproj (posible)
-  "Selects a project file from a given posible file list.
-From a given posible list returns a visual studio project file,
-first trys to find an sln and if its not found trys with a csproj
-file. If neither is found returns nil."
-  (let ((project nil)
-        (file nil)
-        (files (copy-tree posible)))
-    (while (and (not project) files)
-      (setq file (car files))
-      (when (string-suffix-p ".sln" file t)
-        (setq project file))
-      (setq files (cdr files))
+(defun find-nearest-file (suffix dir depth)
+  "Finds the nearest file in dir herarchy that has the given suffix"
+  (let ((cont 0)
+        posibles
+        file
+        (dir-actual dir)
+        project)
+    (while (and (not project) (> (- depth cont) 0))
+      (setq posibles (directory-files dir-actual t (contcat "^.+\\" suffix "$")))
+      (while (and (not project) posibles)
+        (setq file (car posibles))
+        (when (string-suffix-p suffix file t)
+          (setq project file))
+        (setq posibles (cdr posibles))
+        )
+      (setq cont (1+ cont))
+      (setq dir-actual (parent-directory dir-actual))
       )
-    (setq files (copy-tree posible))
-    (while (and (not project) files)
-      (setq file (car files))
-      (when (string-suffix-p ".csproj" file t)
-        (setq project file))
-      (setq files (cdr files))
-      )
+    project
+    ) )
+
+(defun get-vsproject-here (this-file only-sln depth)
+  "Gets the main vsproject file for a given source file."
+  (let ((dir-actual (parent-directory this-file))
+        project )
+    (setq project (find-nearest-file ".sln" dir-actual depth))
+    (if (and (not project) (not only-sln))
+        (setq project (find-nearest-file ".csproj" dir-actual depth)) )
     project
     )
   )
 
-(defun get-vsproject-here (this-file only-sln)
-  "Gets the main vsproject file for a given source file."
-  (let ((dir-actual (parent-directory this-file))
-        posibles
-        project
-        (cont 4))
-    (while (and (not project) (> cont 0))
-      (if only-sln
-          (setq posibles (directory-files dir-actual t "^.*\\.sln$"))
-        (setq posibles (directory-files dir-actual t "^\\(.*\\.sln\\|.*\\.csproj\\)$")))
-      (setq project (select-sln-csproj posibles))
-      (setq cont (1- cont))
-      (setq dir-actual (parent-directory dir-actual))
-      )
-    project
-    )
-  )
-  
+(defvar pablo-construirvs-ddepth
+  4
+  "La profundidad máxima a la que va a tratar de llegar la función find-nearest-file cuando este buscando el fichero del proyecto.")
+
+(defvar pablo-construirvs-path
+  "/cygdrive/e/pablo/comun/codigo/lang/bat/construirvs2019.bat"
+  "La ruta del bat que pone el ambiente y ejecuta a msbuild en ese ambiente.")
+
 (defun compile-vsproject-here ()
   "Compiles the project of the current source.
 This function searches for the .net project nearest to the
 current path and puts it on a command to build that project."
   (interactive)
   (progn
-    ;; If compile-command has its standard value, try to create a compile command for the vs-project.
-    (if (equal compile-command (eval (car (get 'compile-command 'standard-value))))
-        (let ((project (get-vsproject-here buffer-file-name 'nil)) )
+    ;; If compile-command is empty or has its standard value, try to create a compile command for the vs-project.
+    (if (or (equal compile-command "")
+            (equal compile-command (eval (car (get 'compile-command 'standard-value)))))
+        (let ((project (get-vsproject-here buffer-file-name 'nil pablo-construirvs-ddepth)) )
           (when (not project)
             (setq project "(no project.csproj or project.sln found)"))
-          (setq compile-command (concat "/cygdrive/d/comun/codigo/lang/bat/construirvs2019.bat " project))
+          (setq compile-command (concat pablo-construirvs-path " /p:Configuration=Debug `cygpath -wa \"" project "\"`"))
           ))
     ;; any way, call the compile command.
     (call-interactively 'compile)
@@ -366,9 +364,9 @@ current path and puts it on a command to build that project."
 This function, deactivates the \"http_proxy\" variable if it is set, stops the omnisharp server if it is already running, searches for the .net project closest to the current path and starts omnisharp for that project."
   (interactive
    (list
-    (progn 
+    (progn
       (unless (and (boundp 'omnisharp-vs-project) omnisharp-vs-project)
-        (setq omnisharp-vs-project (get-vsproject-here buffer-file-name 't))
+        (setq omnisharp-vs-project (get-vsproject-here buffer-file-name 't pablo-construirvs-ddepth))
         )
       (setq omnisharp-vs-project
             (read-file-name "Start OmniSharpServer.exe for solution: "
@@ -429,12 +427,12 @@ The function should take a list like this:
               ;; Recalculate the end of the region
               (setq end (+ end delta-end) )
               )
-            
+
             )
         ;; Else if the first number is not found just show a message.
         (message "Numbers were not found!")
         )
-      
+
       )
     )
   )
@@ -561,12 +559,28 @@ Right now it doesn't sopport comma characters as values embeded in quotes.
     )
   )
 
+(defun windowsACygwin (winpath)
+  "This function turns a normal windows path into a cygwin one."
+  (let* ((cygpath (replace-regexp-in-string
+                   "\\([A-Za-z]\\):/" "/cygdrive/\\1/"
+                   (replace-regexp-in-string
+                    "[A-Za-z]:/" 'downcase
+                    (replace-regexp-in-string "\\\\" "/" winpath t nil)
+                    t nil)
+                   t nil)))
+    cygpath)
+  )
+
+(defun csharp--compilation-error-file-resolve()
+  "This is a replacement of the function of the same name at \"csharp-compilation.el\". I made this to make it work with cygwin."
+  (cons (match-string 1) (file-name-directory (windowsACygwin (match-string 4)))))
+
 (defun traer-linea-reversa (final)
-  "Trae una linea de texto del buffer dado su final."
+  "Trae el inicio de una linea dado su final."
   (let ((pos final))
     (goto-char (1- pos))
     (setq pos (1+ (re-search-backward "$")))
-    (message "Linea: inicio %i final %i longitud %i" pos final (- final pos))
+    ;; (message "Linea: inicio %i final %i longitud %i" pos final (- final pos))
     (list pos final (- final pos)) ) )
 
 (defun flanco-negativo-p (linant linact)
@@ -576,7 +590,7 @@ Right now it doesn't sopport comma characters as values embeded in quotes.
 
 (defun detectar-inicio-fin-area-tabla (limini limfin)
   "Para determinar donde inicia y donde termina el area en la que se encuentra la tabla."
-  (let ((pos limfin) linact linant (tol 3))
+  (let ((pos limfin) linact linant)
     ;; Colocate al final
     (goto-char pos)
     (setq linact (traer-linea-reversa pos)
@@ -586,11 +600,11 @@ Right now it doesn't sopport comma characters as values embeded in quotes.
                 (> pos limini))
       (setq linant linact
             linact (traer-linea-reversa (1- pos))
-            pos (nth 0 linact)) )
+            pos (nth 0 linact) ) )
     (list (nth 0 linant) limfin) ) )
 
 (defun detectar-inicio-fin-tabla (limini limfin)
-  "Determinar exactamente el primir y último caracter de la tabla."
+  "Determina exactamente el primer y último caracter de la tabla."
   (let ((cantl 3) (tol 3) (cont 0) linact linant inicio final ancho)
     ;; Busca un conjunto de 3 o más lineas seguidas que tengan la misma longitud.
     (setq pos (if (> limfin (point-max))
@@ -603,12 +617,13 @@ Right now it doesn't sopport comma characters as values embeded in quotes.
     ;; Recorre toda el area en reversa linea por linea tomando la longitud de cada linea.
     (while (and (or (< cont cantl)
                     (not (flanco-negativo-p linant linact)))
-                (> pos limini))
+                (>= pos limini))
       (setq linant linact
             linact (traer-linea-reversa (1- pos))
             pos (nth 0 linact))
       (if (and (> cont 0) (= (nth 2 linant) (nth 2 linact)))
           (progn ;; (message "Encontré otra linea!")
+            (setq inicio (nth 0 linact))
             (setq cont (1+ cont)) )
         (if (and (> (nth 2 linact) tol) (= (nth 2 linant) (nth 2 linact)))
             (progn ;; (message "Encontré 2 lineas iguales!!")
@@ -616,23 +631,22 @@ Right now it doesn't sopport comma characters as values embeded in quotes.
                     final (nth 1 linant)
                     ancho (- (nth 1 linact) (nth 0 linact))) ) ) ) )
     ;; (message "Cerró el bucle!")
-    (setq inicio (nth 0 linant))
     (list inicio final ancho cont) ) )
 
 (defun detectar-divisiones-tabla (inicio final ancho alto)
   "Encuentra las columnas que son divisiones de columna."
   (let ((divisiones (list)) (linea 0) (pos 0))
     (dotimes (col (1- ancho))
-      (message "col %i" col)
+      ;; (message "col %i" col)
       (setq linea 0
             pos (+ (* linea ancho) inicio col))
-      (message "Posición %i char %S" pos (char-after pos))
+      ;; (message "Posición %i char %S" pos (char-after pos))
       (while (and (< linea alto)
                   (char-equal (char-after pos) (aref " " 0)))
-        (message "linea %i" linea)
+        ;; (message "linea %i" linea)
         (setq linea (1+ linea)
               pos (+ (* linea ancho) inicio col))
-        (message "Posición %i char %S" pos (char-after pos))
+        ;; (message "Posición %i char %S" pos (char-after pos))
         )
       (when (>= linea alto)
         (message "Encontré una división %i" col)
@@ -645,9 +659,9 @@ Right now it doesn't sopport comma characters as values embeded in quotes.
   "Retorna la cantidad de caracteres que cubrió el match si lo hubo, si no hubo match retorna 0"
   (if (string-match expresion texto) (length (match-string 0 texto)) 0) )
 
-(defun detectar-espacios-blancos-tabla (initab fintab ancho alto divisiones)
+(defun detectar-espacios-blanco-tabla (initab fintab ancho alto divisiones)
   "Una función que detecta cuanto espacio hay en una columna que se puede recortar y hacia donde está alineada."
-  (let ((espacios (list)) minesp linea ini fin lon textocel espini espfin cantesp)
+  (let ((espacios (list)) minesp linea ini fin lon textocel espini espfin (cantesp 0))
     (dotimes (col (1- (length divisiones)))
       (setq minesp ancho
             linea 0)
@@ -669,7 +683,7 @@ Right now it doesn't sopport comma characters as values embeded in quotes.
                 espfin (longitud-match " +$" textocel)
                 cantesp (+ espini espfin) )
           ;; (message "espini %i espfin %i cantesp %i" espini espfin cantesp)
-          (if (or (= linea 0) (< cantesp minesp))
+          (if (or (< cantesp minesp) (= linea 0))
               (setq minesp cantesp) ) )
         (setq linea (1+ linea)) )
       (setq espacios (append espacios (list minesp))) )
@@ -677,23 +691,24 @@ Right now it doesn't sopport comma characters as values embeded in quotes.
 
 (defun recortar-espacios-tabla (initab fintab ancho alto divisiones espacios)
   "Recorta los espacios de la tabla."
-  (let (filar colr ini fin lon textocel espacio)
+  (let (filar colr ini fin lon textocel)
     (dotimes (fila alto)
       (setq filar (- alto fila 1))
       ;; (message "fila %i filar %i" fila filar)
       (dotimes (col (length espacios))
+        ;; (message "col %i (legth espacios) %i" col (length espacios))
         (setq colr (- (length espacios) col 1)
-              ini (+ (* filar ancho) (nth colr divisiones) 1 initab)
-              ;; (message "colr %i ini %i" colr ini)
-              fin (+ (* filar ancho) (nth (1+ colr) divisiones) initab)
-              ;; (message "colr %i ini %i fin %i" colr ini fin)
-              lon (- fin ini)
+              ini (+ (* filar ancho) (nth colr divisiones) 1 initab))
+        ;; (message "colr %i ini %i" colr ini)
+        (setq fin (+ (* filar ancho) (nth (1+ colr) divisiones) initab))
+        ;; (message "colr %i ini %i fin %i" colr ini fin)
+        (setq lon (- fin ini)
               textocel (buffer-substring-no-properties ini fin)
               espacio (nth colr espacios))
         ;; (message "fila %i filar %i col %i colr %i ini %i fin %i lon %i textocel \"%s\" espacio %i" fila filar col colr ini fin lon textocel espacio)
         (when (and (> espacio 0)
-                   (or (string-match (format "^ \\{%i\\}" espacio) textocel)
-                       (string-match (format " \\{%i\\}$" espacio) textocel)
+                   (or (string-match (format " \\{%i\\}$" espacio) textocel)
+                       (string-match (format "^ \\{%i\\}" espacio) textocel)
                        (string-match (format "-\\{%i\\}$" espacio) textocel) ) )
           ;; (message "Eliminando espacios")
           (setq textocel (replace-match "" nil 't textocel))
@@ -701,7 +716,7 @@ Right now it doesn't sopport comma characters as values embeded in quotes.
           (goto-char ini)
           (insert textocel) ) ) ) ) )
 
-(defun repair-sqltables-ms (&optional start end)
+(defun repair-sqltable-ms (&optional start end)
   "A function to repair a table output from osql on a sqli buffer."
   (interactive
    (list
@@ -717,7 +732,7 @@ Right now it doesn't sopport comma characters as values embeded in quotes.
         (setq resultado (detectar-inicio-fin-area-tabla (point-min) (point))) )
       (setq initab (nth 0 resultado)
             fintab (nth 1 resultado))
-      (message "inicio-tabla %i fin-tabla %i" initab fintab)
+      ;; (message "inicio-tabla %i fin-tabla %i" initab fintab)
       ;; Quitale todas las propiedades al texto de la tabla.
       (set-text-properties initab fintab nil)
       ;; Si los registros están truncados combina sus partes de forma que queden en una linea por registro.
@@ -729,14 +744,14 @@ Right now it doesn't sopport comma characters as values embeded in quotes.
             fintab (nth 1 resultado)
             ancho (1+ (nth 2 resultado))
             alto (nth 3 resultado))
-      (message "inicio-tabla %i fin-tabla %i ancho %i alto %i" initab fintab ancho alto)
+      ;; (message "inicio-tabla %i fin-tabla %i ancho %i alto %i" initab fintab ancho alto)
       ;; Recorre toda el área, establece donde se dividen las columnas o sea su ancho.
       (setq divisiones (detectar-divisiones-tabla initab fintab ancho alto))
-      (message "divisiones %s" divisiones)
+      ;; (message "divisiones %s" divisiones)
       ;; Recorre toda la tabla establece que tanto espacio se puede recortar de cada columna.
-      (setq espacios (detectar-espacios-blancos-tabla
+      (setq espacios (detectar-espacios-blanco-tabla
                       initab fintab ancho alto divisiones))
-      (message "espacios %s" espacios)
+      ;;(message "espacios %s" espacios)
       ;; Recorta todo el espacio en blanco posible.
       (recortar-espacios-tabla initab fintab ancho alto divisiones espacios) ) ) )
 
