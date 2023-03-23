@@ -308,7 +308,7 @@ This function takes point to the definition of the CSharp function in the curren
         (dir-actual dir)
         project)
     (while (and (not project) (> (- depth cont) 0))
-      (setq posibles (directory-files dir-actual t (contcat "^.+\\" suffix "$")))
+      (setq posibles (directory-files dir-actual t (concat "^.+\\" suffix "$")))
       (while (and (not project) posibles)
         (setq file (car posibles))
         (when (string-suffix-p suffix file t)
@@ -649,9 +649,9 @@ Right now it doesn't sopport comma characters as values embeded in quotes.
         ;; (message "Posición %i char %S" pos (char-after pos))
         )
       (when (>= linea alto)
-        (message "Encontré una división %i" col)
+        ;; (message "Encontré una división %i" col)
         (setq divisiones (append divisiones (list col)))
-        (message "Divisiones %s" divisiones)
+        ;; (message "Divisiones %s" divisiones)
         ) )
     divisiones ) )
 
@@ -696,7 +696,7 @@ Right now it doesn't sopport comma characters as values embeded in quotes.
       (setq filar (- alto fila 1))
       ;; (message "fila %i filar %i" fila filar)
       (dotimes (col (length espacios))
-        ;; (message "col %i (legth espacios) %i" col (length espacios))
+        ;; (message "col %i (length espacios) %i" col (length espacios))
         (setq colr (- (length espacios) col 1)
               ini (+ (* filar ancho) (nth colr divisiones) 1 initab))
         ;; (message "colr %i ini %i" colr ini)
@@ -751,7 +751,7 @@ Right now it doesn't sopport comma characters as values embeded in quotes.
       ;; Recorre toda la tabla establece que tanto espacio se puede recortar de cada columna.
       (setq espacios (detectar-espacios-blanco-tabla
                       initab fintab ancho alto divisiones))
-      ;;(message "espacios %s" espacios)
+      ;; (message "espacios %s" espacios)
       ;; Recorta todo el espacio en blanco posible.
       (recortar-espacios-tabla initab fintab ancho alto divisiones espacios) ) ) )
 
