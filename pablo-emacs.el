@@ -621,15 +621,19 @@ Right now it doesn't sopport comma characters as values embeded in quotes.
       (setq linant linact
             linact (traer-linea-reversa (1- pos))
             pos (nth 0 linact))
-      (if (and (> cont 0) (= (nth 2 linant) (nth 2 linact)))
+      (if (and (> cont 0)
+               (or (and (not ancho)
+                        (= (nth 2 linant) (nth 2 linact)) )
+                   (= ancho (nth 2 linant) (nth 2 linact)) ))
           (progn ;; (message "Encontré otra linea!")
             (setq inicio (nth 0 linact))
             (setq cont (1+ cont)) )
-        (if (and (> (nth 2 linact) tol) (= (nth 2 linant) (nth 2 linact)))
+        (if (and (not ancho) (> (nth 2 linact) tol)
+                 (= (nth 2 linant) (nth 2 linact)))
             (progn ;; (message "Encontré 2 lineas iguales!!")
               (setq cont 2
                     final (nth 1 linant)
-                    ancho (- (nth 1 linact) (nth 0 linact))) ) ) ) )
+                    ancho (- (nth 1 linact) (nth 0 linact)) )))))
     ;; (message "Cerró el bucle!")
     (list inicio final ancho cont) ) )
 
