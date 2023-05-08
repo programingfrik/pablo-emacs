@@ -129,7 +129,7 @@ Si se trata de un fichero o un directorio lo abre en el propio Emacs.
              (progn
                (if (and (equal system-type 'cygwin)
                         (or (string-match-p "^[[:alpha:]]:\\\\" texto)
-                            (string-match-p "^\\(\\\\\\\\\\)?[^\\\\]+\\(\\\\.*\\)+" texto)))
+                            (string-match-p "^\\(\\\\\\\\\\)?[^\\\\]+\\(\\\\.*\\)+" texto) ))
                    (progn
                      ;; si estamos en cygwin y se trata de una ruta
                      ;; estilo windows hay que transformarla a algo
