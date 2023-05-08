@@ -96,20 +96,16 @@ Si se trata de un fichero o un directorio lo abre en el propio Emacs.
       ; si la cadena contiene "DRIVER={SQL Server"
       (cond ((string-match-p "DRIVER={MySQL ODBC" texto)
              (sql-mysql 't))
-
             ((string-match-p "DRIVER={SQL Server" texto)
              (sql-ms 't))
-            
             ; si no, si la cadena contiene "Provider=SQLOLEDB"
             ((string-match-p "Provider=SQLOLEDB" texto)
              (sql-ms 't))
-            
             ; si no, si la cadena contiene "Provider=OraOLEDB.Oracle"
             ((string-match-p "Provider=OraOLEDB.Oracle" texto)
              (progn
                (setq sql-database sql-server)
                (sql-oracle 't)))
-            
             ; si no, si la cadena contiene "User ID" y "Password" y "Data Source"
             ((and (string-match-p "User ID" texto)
                   (string-match-p "\\(Password\\|PWD\\)" texto)
@@ -121,7 +117,6 @@ Si se trata de un fichero o un directorio lo abre en el propio Emacs.
                (progn
                  (setq sql-database sql-server)
                  (sql-oracle 't))) )
-            
             ; si no, si la cadena empieza con "http://"
             ((string-match-p "\\`https?://" texto)
              (browse-url texto))
@@ -129,14 +124,28 @@ Si se trata de un fichero o un directorio lo abre en el propio Emacs.
             ; es un link de mark down en este mismo texto.
 
             ; si no, entonces se trata de un fichero.
+            ; not starting 'http://"
             ('t
-             (progn ; not starting 'http://"
-               (if (file-exists-p texto)
-                   (find-file texto)
-                 (if (file-exists-p (concat texto ".el"))
-                     (find-file (concat texto ".el"))
-                   (when (y-or-n-p (format "El fichero \"%s\" no existe. ¿Lo creo?" texto) )
-                     (find-file texto )) ) ) ))
+             (progn
+               (if (and (equal system-type 'cygwin)
+                        (or (string-match-p "^[[:alpha:]]:\\\\" texto)
+                            (string-match-p "^\\(\\\\\\\\\\)?[^\\\\]+\\(\\\\.*\\)+" texto)))
+                   (progn
+                     ;; si estamos en cygwin y se trata de una ruta
+                     ;; estilo windows hay que transformarla a algo
+                     ;; que entienda cygwin
+                     (setq texto (replace-regexp-in-string
+                                  "^\\([[:alpha:]]\\):\\\\\\(.*\\)$"
+                                  "/cygdrive/\\1/\\2" texto ))
+                     (setq texto (replace-regexp-in-string
+                                  "\\\\" "/" texto ))))
+               (cond ((file-exists-p texto)
+                      (find-file texto))
+                     ((file-exists-p (concat texto ".el"))
+                      (find-file (concat texto ".el")))
+                     ((y-or-n-p (format "El fichero \"%s\" no existe. ¿Lo creo?" texto))
+                      (find-file texto) )))
+             )
             )
       )
     )
@@ -713,6 +722,7 @@ Right now it doesn't sopport comma characters as values embeded in quotes.
           (delete-region ini fin)
           (goto-char ini)
           (insert textocel) )))))
+
 
 (defun repair-sqltable-ms (&optional start end)
   "A function to repair a table output from osql on a sqli buffer.
