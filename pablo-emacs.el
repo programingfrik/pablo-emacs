@@ -575,12 +575,12 @@ Right now it doesn't sopport comma characters as values embeded in quotes.
     (goto-char (1- pos))
     (setq pos (1+ (re-search-backward "$")))
     ;; (message "Linea: inicio %i final %i longitud %i" pos final (- final pos))
-    (list pos final (- final pos)) ) )
+    (list pos final (- final pos)) ))
 
 (defun flanco-negativo-p (linant linact)
   "Detecta si hay un flanco negativo en las longitudes de las lineas."
   (let ((tol 3))
-    (and (> (nth 2 linant) tol) (<= (nth 2 linact) tol)) ) )
+    (and (> (nth 2 linant) tol) (<= (nth 2 linact) tol)) ))
 
 (defun detectar-inicio-fin-area-tabla (limini limfin)
   "Para determinar donde inicia y donde termina el area en la que se encuentra la tabla."
@@ -594,8 +594,8 @@ Right now it doesn't sopport comma characters as values embeded in quotes.
                 (> pos limini))
       (setq linant linact
             linact (traer-linea-reversa (1- pos))
-            pos (nth 0 linact) ) )
-    (list (nth 0 linant) limfin) ) )
+            pos (nth 0 linact) ))
+    (list (nth 0 linant) limfin) ))
 
 (defun detectar-inicio-fin-tabla (limini limfin)
   "Determina exactamente el primer y último caracter de la tabla."
@@ -629,7 +629,7 @@ Right now it doesn't sopport comma characters as values embeded in quotes.
                     final (nth 1 linant)
                     ancho (- (nth 1 linact) (nth 0 linact)) )))))
     ;; (message "Cerró el bucle!")
-    (list inicio final ancho cont) ) )
+    (list inicio final ancho cont) ))
 
 (defun detectar-divisiones-tabla (inicio final ancho alto)
   "Encuentra las columnas que son divisiones de columna."
@@ -650,8 +650,8 @@ Right now it doesn't sopport comma characters as values embeded in quotes.
         ;; (message "Encontré una división %i" col)
         (setq divisiones (append divisiones (list col)))
         ;; (message "Divisiones %s" divisiones)
-        ) )
-    divisiones ) )
+        ))
+    divisiones ))
 
 (defun longitud-match (expresion texto)
   "Retorna la cantidad de caracteres que cubrió el match si lo hubo, si no hubo match retorna 0"
@@ -682,10 +682,10 @@ Right now it doesn't sopport comma characters as values embeded in quotes.
                 cantesp (+ espini espfin) )
           ;; (message "espini %i espfin %i cantesp %i" espini espfin cantesp)
           (if (or (< cantesp minesp) (= linea 0))
-              (setq minesp cantesp) ) )
+              (setq minesp cantesp) ))
         (setq linea (1+ linea)) )
       (setq espacios (append espacios (list minesp))) )
-    espacios ) )
+    espacios ))
 
 (defun recortar-espacios-tabla (initab fintab ancho alto divisiones espacios)
   "Recorta los espacios de la tabla."
@@ -707,19 +707,24 @@ Right now it doesn't sopport comma characters as values embeded in quotes.
         (when (and (> espacio 0)
                    (or (string-match (format " \\{%i\\}$" espacio) textocel)
                        (string-match (format "^ \\{%i\\}" espacio) textocel)
-                       (string-match (format "-\\{%i\\}$" espacio) textocel) ) )
+                       (string-match (format "-\\{%i\\}$" espacio) textocel) ))
           ;; (message "Eliminando espacios")
           (setq textocel (replace-match "" nil 't textocel))
           (delete-region ini fin)
           (goto-char ini)
-          (insert textocel) ) ) ) ) )
+          (insert textocel) )))))
 
 (defun repair-sqltable-ms (&optional start end)
-  "A function to repair a table output from osql on a sqli buffer."
+  "A function to repair a table output from osql on a sqli buffer.
+
+TODO: Algunos casos extremos de tablas muy grandes en las que sería genial tener la ayuda de esta función, no estan funcionando adecuadamente. El caso del query en eikon de la vista Vw_VinculacionDesvinculacionEikon no está funcionando adecuadamente, trae un campo varchar con tamaño como 9000 y hace que se rompa la función tratando de ponerla pequeña.
+TODO: Esta función debería sustituir la función \"reparar-stored-procedure\".
+TODO: Esta función podría hacer recortes a las columnas para adaptarlas a un ancho de pantalla específico.
+"
   (interactive
    (list
     (if (use-region-p) (region-beginning))
-    (if (use-region-p) (region-end)) ) )
+    (if (use-region-p) (region-end)) ))
   (save-excursion
     (let (initab fintab resultado divisiones espacios)
       ;; Si el usuario proporciona una región hay que señirse a esa región.
@@ -751,5 +756,136 @@ Right now it doesn't sopport comma characters as values embeded in quotes.
                       initab fintab ancho alto divisiones))
       ;; (message "espacios %s" espacios)
       ;; Recorta todo el espacio en blanco posible.
-      (recortar-espacios-tabla initab fintab ancho alto divisiones espacios) ) ) )
+      (recortar-espacios-tabla initab fintab ancho alto divisiones espacios) )))
 
+
+;; (defun sql-dentro-cadena (punto)
+;;   "Dice si un punto está dentro de una cadena o no."
+;;   )
+
+
+;; (defun sql-dentro-comentario (punto)
+;;   "Dice si un punto está dentro de un comentario."
+;;   )
+
+
+;; (defun limpiar-codigo-sql (&optional start end)
+;;   "Una función para limpiar el código SQL y ponerlo como creo que es más legible."
+;;   (interactive
+;;    (list
+;;     (if (use-region-p) (region-beginning))
+;;     (if (use-region-p) (region-end)) ))
+;;   (save-excursion
+;;     (let (inir finr)
+;;       (if (use-region-p)
+;;           (setq inir start
+;;                 finr end )
+;;         (setq inir (point-min)
+;;               finr (point-max) ))
+;;        ;; Pon espacios alrededor de los operadores y después de una coma.
+
+;;        ;; Ve al inicio del texto.
+;;        ;; Busca el operador más cercano.
+;;        ;; Si está dentro de un comentario o una cadena ignoralo.
+;;        ;; Sino está dentro de un comentario o cadena pon espacio antes y espacio después
+;;        "\_<\([-+=*/]\|[><]=?\|<>\)\_>"
+;;        (replace-regexp-in-region "\\w\\([\\+-*/]\\)\\w" "" inir finr)
+;;      )))
+
+
+;; "\\([-+=*/]\\|[><]=?\\|<>\\)"
+
+
+(defun sql-ms-descripcion-a-create (&optional start end)
+  "Genera una sentencia create a partir de la descripción de una tabla."
+  (interactive
+   (list
+    (if (use-region-p) (region-beginning))
+    (if (use-region-p) (region-end)) ))
+  (save-excursion
+    (let ((orig (point)) (salida "") nombre tipo tam null
+          (expcol (concat "\\([[:alnum:]_]+\\) +\\([[:alnum:]]+\\)"
+                          " +\\([0-9]+\\|NULL\\) +\\(YES\\|NO\\)")))
+      ;; Ve a la cabecera de la tabla
+      (re-search-backward "columna +tipo +bytes +permite_null")
+      ;; Ve tomando de registro en registro
+      (while (re-search-forward expcol nil t)
+        ;; Transforma cada registro en una columna del create
+        (setq nombre (match-string-no-properties 1))
+        (setq tipo (match-string-no-properties 2))
+        (setq tam (match-string-no-properties 3))
+        (setq null (match-string-no-properties 4))
+        (if (or (string= tam "NULL")
+                (cl-member (downcase tipo)
+                           '("text" "ntext" "image")
+                           :test 'string=))
+            (setq tam "")
+          (progn
+            (if (cl-member (downcase tipo)
+                           '("nchar" "nvarchar")
+                           :test 'string=)
+                (setq tam (number-to-string (/ (string-to-number tam) 2))) )
+            (setq tam (concat "(" tam ")"))
+            ))
+        (if (string= null "NO")
+            (setq null " not")
+          (setq null ""))
+        (setq null (concat null " null,\n"))
+        (setq salida (concat salida "    " nombre " " tipo tam null))
+        )
+      ;; Borra los últimos 2 caracteres
+      (setq salida (substring salida 0 (- (length salida) 2)))
+
+      ;; Escribe la sentencia create table.
+      (goto-char orig)
+      (insert "create table temptable (\n" salida "\n)\ngo\n")
+      ))
+  )
+
+
+(defun sql-ms-descripcion-a-select (&optional start end)
+  "Genera una sentencia select a partir de la descripción de una tabla."
+  (interactive
+   (list
+    (if (use-region-p) (region-beginning))
+    (if (use-region-p) (region-end)) ))
+  (save-excursion
+    (let ((orig (point)) (salida "") nombre tipo tam null
+          (expcol (concat "\\([[:alnum:]_]+\\) +\\([[:alnum:]]+\\)"
+                          " +\\([0-9]+\\|NULL\\) +\\(YES\\|NO\\)")))
+      ;; Ve a la cabecera de la tabla
+      (re-search-backward "columna +tipo +bytes +permite_null")
+      ;; Ve tomando de registro en registro
+      (while (re-search-forward expcol nil t)
+        ;; Transforma cada registro en una columna del select
+        (setq nombre (match-string-no-properties 1))
+        (setq tipo (match-string-no-properties 2))
+        (setq tam (match-string-no-properties 3))
+        (setq null (match-string-no-properties 4))
+        (if (or (string= tam "NULL")
+                (cl-member (downcase tipo)
+                           '("text" "ntext" "image")
+                           :test 'string=))
+            (setq tam "")
+          (progn
+            (if (cl-member (downcase tipo)
+                           '("nchar" "nvarchar")
+                           :test 'string=)
+                (setq tam (number-to-string (/ (string-to-number tam) 2))))
+            (setq tam (concat "(" tam ")"))
+            ))
+        (if (string= null "NO")
+            (setq null " not")
+          (setq null ""))
+        (setq null (concat null " null\n"))
+        (setq salida (concat salida "    " nombre ", -- " tipo tam null))
+        )
+      ;; Borra la última coma de salida
+      (string-match ", -- \\([[:alnum:]() ]+\\)\n\\'" salida)
+      (setq salida (replace-match " -- \\1\n" t nil salida))
+
+      ;; Escribe la sentencia select
+      (goto-char orig)
+      (insert "select top 10\n" salida "from temptable\ngo\n")
+      ))
+  )
