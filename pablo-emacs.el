@@ -724,6 +724,8 @@ Right now it doesn't sopport comma characters as values embeded in quotes.
           (insert textocel) )))))
 
 
+;; TODO: Algunas tablas muy grandes hacen que se vuelva un disparate la "reparación de la tabla".
+;; TODO: Habría que hacer alguna manera de probar de manera automática casos de tablas que debe poder reparar esta función.
 (defun repair-sqltable-ms (&optional start end)
   "A function to repair a table output from osql on a sqli buffer.
 
