@@ -901,3 +901,15 @@ TODO: Esta función podría hacer recortes a las columnas para adaptarlas a un a
       (insert "select top 10\n" salida "from temptable\ngo\n")
       ))
   )
+
+
+(defun ruta-buffer-actual-killring ()
+  "Pone la ruta del fichero actual en el killring."
+  (interactive)
+  (if buffer-file-name
+      (progn
+        (message "Tomando la ruta %s" buffer-file-name)
+        (kill-new buffer-file-name) )
+    (message "Este buffer no tiene un fichero asociado")
+    ) )
+
