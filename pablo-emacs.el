@@ -583,7 +583,7 @@ Right now it doesn't sopport comma characters as values embeded in quotes.
   (let ((pos final))
     (goto-char (1- pos))
     (setq pos (1+ (re-search-backward "$")))
-    ;; (message "Linea: inicio %i final %i longitud %i" pos final (- final pos))
+    (message "Linea: inicio %i final %i longitud %i" pos final (- final pos))
     (list pos final (- final pos)) ))
 
 (defun flanco-negativo-p (linant linact)
@@ -605,6 +605,105 @@ Right now it doesn't sopport comma characters as values embeded in quotes.
             linact (traer-linea-reversa (1- pos))
             pos (nth 0 linact) ))
     (list (nth 0 linant) limfin) ))
+
+
+(defun texto-de-tabla (mapa pos ind initab fintab)
+  "Extrae el texto que corresponde al campo ind en el registro pos
+dentro de mapa que hace referencia a posiciones dentro de la
+tabla entre initab y fintab."
+  ;; (message "mapa %s; pos %i; ind %i; initab %i; fintab %i" mapa pos ind initab fintab)
+  (let* ((tomaini (+ initab (apply '+ (seq-map
+                                       (lambda (reg) (apply '+ reg))
+                                       (seq-take mapa pos)))
+                     (apply '+ (seq-take (nth pos mapa) ind))))
+         (tomafin (+ tomaini (nth ind (nth pos mapa)))) retorno)
+    (setq retorno (buffer-substring tomaini (1- tomafin)))
+    ;; (message "El texto encontrado: \"%s\"" retorno)
+    retorno ))
+
+
+(defun lleno-de-guiones (mapa pos initab fintab)
+  "Revisa si el registro pos dentro de mapa está lleno de guiones."
+  (let ((retorno 't) (ind 0))
+    (while (and (< ind (length (nth pos mapa)))
+                (setq retorno
+                      (not (eq (string-match-p ;; TODO: mejor con looking-at ??
+                                "^-+$"
+                                (texto-de-tabla
+                                 mapa pos ind initab fintab))
+                               nil))))
+      (setq ind (1+ ind)) )
+    ;; (message "La fila %i está llena de guiones? %s" pos retorno)
+    retorno ))
+
+
+(defun completar-tabla-divisiones (initab fintab)
+  "Esta función trata de completar la tabla de manera que todos los registros queden del mismo tamaño."
+  (let ((pos initab) (mapalon (list)) (regtemp (list)))
+
+    ;; determinar la longitud de las lineas de las tablas y las divisiones de las columnas
+
+    ;; recorrer la tabla linea por linea para completar cada linea que tenga menos caracteres de los que debería.
+
+    ;; rellenar las columnas que haga falta para que los separadores coincidan con los otros.
+
+
+    ;; Recorre el area de la tabla y arma una tabla con las cantidades de caracteres de cada columna y de cada registro.
+    (goto-char initab)
+
+    (while (re-search-forward "\\(|\\|\n\\)" fintab 't)
+      (message "Encontré un separador \"%s\"" (match-string 1))
+      ;; Toma la distancia entre la posición actual y el próximo separador de columna o de registro.
+      (setq regtemp (append regtemp (list (- (point) pos))))
+      (message "Distancia %i" (- (point) pos))
+      (when (string= (match-string 1) "\n")
+        ;; Si estamos al final de un registro pon su información en la tabla.
+        (setq mapalon (append mapalon (list regtemp)))
+
+        (setq regtemp (list)) )
+      (setq pos (point)) )
+
+    (message "Todas las columnas encontradas %s" mapalon)
+
+    ;; Busca las primeras 2 lineas de la tabla, la cabecera de las
+    ;; columnas y el separador, estas dos lineas siempre van a estar
+    ;; presentes, siempre van a tener la misma longitud, no van a
+    ;; tener data extraña y siempre van a tener la longitud correcta
+    ;; de las columnas. La segunda de estas lineas siempre va a estar
+    ;; llena de guiones (-).
+    (setq pos 0)
+
+    ;; Recorre las lineas que encontraste comparando la actual y la
+    ;; siguiente.
+    ;; Si tienen igual número de campos y los campos iguales
+    ;; longitudes y la segunda linea está llena de guiones (-)
+    ;; entonces encontramos las lineas de la cabecera.
+    (while (and (< pos (length mapalon))
+                (not (and  (equal (length (nth pos mapalon))
+                                  (length (nth (1+ pos) mapalon)) )
+                           (equal (nth pos mapalon)
+                                  (nth (1+ pos) mapalon) )
+                           (lleno-de-guiones mapalon (1+ pos) initab fintab) )))
+      (setq pos (1+ pos)) )
+
+    (message "Encontré las dos filas del encabezado %i y %i" pos (1+ pos))
+
+    ;; Usa las longitudes de los campos de estas 2 lineas como el ideal, a lo que deben conformarse las demás lineas.
+
+    ;; Toma solo los registro que tengan todas las columnas.
+
+    ;; Trata de encontrar registros rotos porque tienen caracteres de fin de linea dentro del texto de la columna.
+
+    ;; Si encuentras algún registro roto por finales de linea dentro del texto sustituye el fin de linea por un "\n" textual.
+
+    ;; Agrega caracteres de espacio al final a los campos que tienen menos caracteres que la moda que les corresponda.
+
+    ;; Cortale caracteres del final de más a cada campo que tenga más caracteres que la moda que les corresponda.
+
+    ;; Retorna una estructura con el ancho, alto y inicio y fin de la tabla y también otra con las posiciones de las divisiones.
+    )
+  )
+
 
 (defun detectar-inicio-fin-tabla (limini limfin)
   "Determina exactamente el primer y último caracter de la tabla."
@@ -628,38 +727,51 @@ Right now it doesn't sopport comma characters as values embeded in quotes.
                (or (and (not ancho)
                         (= (nth 2 linant) (nth 2 linact)) )
                    (= ancho (nth 2 linant) (nth 2 linact)) ))
-          (progn ;; (message "Encontré otra linea!")
+          (progn (message "Encontré otra linea!")
             (setq inicio (nth 0 linact))
             (setq cont (1+ cont)) )
         (if (and (not ancho) (> (nth 2 linact) tol)
                  (= (nth 2 linant) (nth 2 linact)))
-            (progn ;; (message "Encontré 2 lineas iguales!!")
+            (progn (message "Encontré 2 lineas iguales!!")
               (setq cont 2
                     final (nth 1 linant)
                     ancho (- (nth 1 linact) (nth 0 linact)) )))))
-    ;; (message "Cerró el bucle!")
+    (message "Cerró el bucle!")
     (list inicio final ancho cont) ))
 
+;; (defun detectar-divisiones-tabla (inicio final ancho alto)
+;;   "Encuentra las columnas que son divisiones de columna."
+;;   (let ((divisiones (list)) (linea 0) (pos 0))
+;;     (dotimes (col (1- ancho))
+;;       ;; (message "col %i" col)
+;;       (setq linea 0
+;;             pos (+ (* linea ancho) inicio col))
+;;       ;; (message "Posición %i char %S" pos (char-after pos))
+;;       (while (and (< linea alto)
+;;                   (char-equal (char-after pos) (aref " " 0)))
+;;         ;; (message "linea %i" linea)
+;;         (setq linea (1+ linea)
+;;               pos (+ (* linea ancho) inicio col))
+;;         ;; (message "Posición %i char %S" pos (char-after pos))
+;;         )
+;;       (when (>= linea alto)
+;;         ;; (message "Encontré una división %i" col)
+;;         (setq divisiones (append divisiones (list col)))
+;;         ;; (message "Divisiones %s" divisiones)
+;;         ))
+;;     divisiones ))
+
 (defun detectar-divisiones-tabla (inicio final ancho alto)
-  "Encuentra las columnas que son divisiones de columna."
-  (let ((divisiones (list)) (linea 0) (pos 0))
+  "Encuentra las columnas que marcan las divisiones de campo."
+  (let ((divisiones (list 0)) (pos 0))
     (dotimes (col (1- ancho))
-      ;; (message "col %i" col)
-      (setq linea 0
-            pos (+ (* linea ancho) inicio col))
-      ;; (message "Posición %i char %S" pos (char-after pos))
-      (while (and (< linea alto)
-                  (char-equal (char-after pos) (aref " " 0)))
-        ;; (message "linea %i" linea)
-        (setq linea (1+ linea)
-              pos (+ (* linea ancho) inicio col))
-        ;; (message "Posición %i char %S" pos (char-after pos))
-        )
-      (when (>= linea alto)
-        ;; (message "Encontré una división %i" col)
+      (setq pos (+ inicio col))
+      (message "Posición %i char %S" pos (char-after pos))
+      (when (char-equal (char-after pos) (aref "|" 0))
         (setq divisiones (append divisiones (list col)))
-        ;; (message "Divisiones %s" divisiones)
-        ))
+        (message "Divisiones %s" divisiones)
+        ) )
+    (setq divisiones (append divisiones (list (1- ancho))))
     divisiones ))
 
 (defun longitud-match (expresion texto)
@@ -729,6 +841,10 @@ Right now it doesn't sopport comma characters as values embeded in quotes.
 (defun repair-sqltable-ms (&optional start end)
   "A function to repair a table output from osql on a sqli buffer.
 
+Para que esta función trabaje se recomienda que se usen las
+siguientes opciones para osql (setq sql-ms-options (quote (\"-w\"
+\"300\" \"-s\" \"|\" \"-n\"))
+
 TODO: Algunos casos extremos de tablas muy grandes en las que sería genial tener la ayuda de esta función, no estan funcionando adecuadamente. El caso del query en eikon de la vista Vw_VinculacionDesvinculacionEikon no está funcionando adecuadamente, trae un campo varchar con tamaño como 9000 y hace que se rompa la función tratando de ponerla pequeña.
 TODO: Esta función debería sustituir la función \"reparar-stored-procedure\".
 TODO: Esta función podría hacer recortes a las columnas para adaptarlas a un ancho de pantalla específico.
@@ -747,22 +863,28 @@ TODO: Esta función podría hacer recortes a las columnas para adaptarlas a un a
         (setq resultado (detectar-inicio-fin-area-tabla (point-min) (point))) )
       (setq initab (nth 0 resultado)
             fintab (nth 1 resultado))
-      ;; (message "inicio-tabla %i fin-tabla %i" initab fintab)
+      (message "inicio-tabla %i fin-tabla %i" initab fintab)
       ;; Quitale todas las propiedades al texto de la tabla.
       (set-text-properties initab fintab nil)
-      ;; Si los registros están truncados combina sus partes de forma que queden en una linea por registro.
-      (replace-regexp-in-region " \n\t" " " initab fintab)
-      ;; Ahora cada registro de la tabla debería estar en una linea y todas las lineas que conforman la tabla deberían tener la misma longitud.
+      ;; Si los registros están truncados combina sus partes de forma
+      ;; que queden en una linea por registro.
+      (replace-regexp-in-region "\n\t" "" initab fintab)
+      (completar-tabla-divisiones initab fintab)
+      ;; Ahora cada registro de la tabla debería estar en una linea y
+      ;; todas las lineas que conforman la tabla deberían tener la
+      ;; misma longitud, y las divisiones en todas las lineas debería
+      ;; coincidir.
+
       ;; Revisa donde realmente inicia y termina la tabla.
       (setq resultado (detectar-inicio-fin-tabla initab fintab)
             initab (nth 0 resultado)
             fintab (nth 1 resultado)
             ancho (1+ (nth 2 resultado))
             alto (nth 3 resultado))
-      ;; (message "inicio-tabla %i fin-tabla %i ancho %i alto %i" initab fintab ancho alto)
+      (message "inicio-tabla %i fin-tabla %i ancho %i alto %i" initab fintab ancho alto)
       ;; Recorre toda el área, establece donde se dividen las columnas o sea su ancho.
       (setq divisiones (detectar-divisiones-tabla initab fintab ancho alto))
-      ;; (message "divisiones %s" divisiones)
+      (message "divisiones %s" divisiones)
       ;; Recorre toda la tabla establece que tanto espacio se puede recortar de cada columna.
       (setq espacios (detectar-espacios-blanco-tabla
                       initab fintab ancho alto divisiones))
@@ -816,10 +938,10 @@ TODO: Esta función podría hacer recortes a las columnas para adaptarlas a un a
     (if (use-region-p) (region-end)) ))
   (save-excursion
     (let ((orig (point)) (salida "") nombre tipo tam null
-          (expcol (concat "\\([[:alnum:]_]+\\) +\\([[:alnum:]]+\\)"
-                          " +\\([0-9]+\\|NULL\\) +\\(YES\\|NO\\)")))
+          (expcol (concat "\\([[:alnum:]_]+\\) *| *\\([[:alnum:]]+\\)"
+                          " *| *\\([0-9]+\\|NULL\\) *| *\\(YES\\|NO\\)")))
       ;; Ve a la cabecera de la tabla
-      (re-search-backward "columna +tipo +bytes +permite_null")
+      (re-search-backward "columna *| *tipo *| *bytes *| *permite_null")
       ;; Ve tomando de registro en registro
       (while (re-search-forward expcol nil t)
         ;; Transforma cada registro en una columna del create
@@ -863,10 +985,10 @@ TODO: Esta función podría hacer recortes a las columnas para adaptarlas a un a
     (if (use-region-p) (region-end)) ))
   (save-excursion
     (let ((orig (point)) (salida "") nombre tipo tam null
-          (expcol (concat "\\([[:alnum:]_]+\\) +\\([[:alnum:]]+\\)"
-                          " +\\([0-9]+\\|NULL\\) +\\(YES\\|NO\\)")))
+          (expcol (concat "\\([[:alnum:]_]+\\) *| *\\([[:alnum:]]+\\)"
+                          " *| *\\([0-9]+\\|NULL\\) *| *\\(YES\\|NO\\)")))
       ;; Ve a la cabecera de la tabla
-      (re-search-backward "columna +tipo +bytes +permite_null")
+      (re-search-backward "columna *| *tipo *| *bytes *| *permite_null")
       ;; Ve tomando de registro en registro
       (while (re-search-forward expcol nil t)
         ;; Transforma cada registro en una columna del select
@@ -913,3 +1035,33 @@ TODO: Esta función podría hacer recortes a las columnas para adaptarlas a un a
     (message "Este buffer no tiene un fichero asociado")
     ) )
 
+
+(defun descripcion-bdatos-a-doc ()
+  "Torna la linea actual, con la descripción de un campo en la base de
+datos, en una descripción para usar en la documentación.
+
+Debería tornar una linea como esta:
+\" maenume          char               8 NO           \"
+
+En una linea como esta:
+\" * maenume char(8) NOT NULL:\"
+"
+  (interactive)
+  (save-excursion
+    (let (reemp nomb (tam "") (stnull "NULL"))
+      (re-search-backward "^")
+      (if (looking-at (concat "^[ 	]*\\([[:alnum:]_]+\\)[ 	|]+"
+                              "\\(\\w+\\)[ 	|]+"
+                              "\\([[:digit:]]+\\|NULL\\)[ 	|]+"
+                              "\\(YES\\|NO\\)[ 	]+$") )
+          (progn
+            (setq nomb (string-replace "_" "\\\\_" (match-string 1)))
+            (unless (or (string= (downcase (match-string 2)) "text")
+                     (string= (match-string 3) "NULL"))
+              (setq tam "(\\3)") )
+            (when (string= (match-string 4) "NO")
+              (setq stnull (concat "NOT " stnull)) )
+            (setq reemp (format " * __%s \\2%s %s__:" nomb tam stnull))
+            (replace-match reemp) )
+          (message (concat "Hubo un error, la linea no parece una "
+                           "descripción de un campo de bdatos.") )))))
