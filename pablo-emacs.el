@@ -816,10 +816,10 @@ TODO: Esta función podría hacer recortes a las columnas para adaptarlas a un a
     (if (use-region-p) (region-end)) ))
   (save-excursion
     (let ((orig (point)) (salida "") nombre tipo tam null
-          (expcol (concat "\\([[:alnum:]_]+\\) +\\([[:alnum:]]+\\)"
-                          " +\\([0-9]+\\|NULL\\) +\\(YES\\|NO\\)")))
+          (expcol (concat "\\([[:alnum:]_]+\\) *| *\\([[:alnum:]]+\\)"
+                          " *| *\\([0-9]+\\|NULL\\) *| *\\(YES\\|NO\\)")))
       ;; Ve a la cabecera de la tabla
-      (re-search-backward "columna +tipo +bytes +permite_null")
+      (re-search-backward "columna *| *tipo *| *bytes *| *anulable")
       ;; Ve tomando de registro en registro
       (while (re-search-forward expcol nil t)
         ;; Transforma cada registro en una columna del create
@@ -863,10 +863,10 @@ TODO: Esta función podría hacer recortes a las columnas para adaptarlas a un a
     (if (use-region-p) (region-end)) ))
   (save-excursion
     (let ((orig (point)) (salida "") nombre tipo tam null
-          (expcol (concat "\\([[:alnum:]_]+\\) +\\([[:alnum:]]+\\)"
-                          " +\\([0-9]+\\|NULL\\) +\\(YES\\|NO\\)")))
+          (expcol (concat "\\([[:alnum:]_]+\\) *| *\\([[:alnum:]]+\\)"
+                          " *| *\\([0-9]+\\|NULL\\) *| *\\(YES\\|NO\\)")))
       ;; Ve a la cabecera de la tabla
-      (re-search-backward "columna +tipo +bytes +permite_null")
+      (re-search-backward "columna *| *tipo *| *bytes *| *anulable")
       ;; Ve tomando de registro en registro
       (while (re-search-forward expcol nil t)
         ;; Transforma cada registro en una columna del select
