@@ -1,0 +1,34 @@
+Prueba repair-sqltable-ms descripción servidor
+(repair-sqltable-ms)
+----prueba----
+
+
+<cursor>
+
+
+---resultado----
+
+======================================================================
+Prueba rapair-sqltable-ms tabla pequeña
+(repair-sqltable-ms)
+----prueba----
+
+select 1
+go
+
+-----
+    1
+
+<cursor>
+
+----resultado----
+
+select 1
+go
+
+-
+1
+
+<cursor>
+
+======================================================================
