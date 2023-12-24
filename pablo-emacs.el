@@ -941,11 +941,7 @@ TODO: Esta función podría hacer recortes a las columnas para adaptarlas a un a
           (expcol (concat "\\([[:alnum:]_]+\\) *| *\\([[:alnum:]]+\\)"
                           " *| *\\([0-9]+\\|NULL\\) *| *\\(YES\\|NO\\)")))
       ;; Ve a la cabecera de la tabla
-<<<<<<< HEAD
       (re-search-backward "columna *| *tipo *| *bytes *| *anulable")
-=======
-      (re-search-backward "columna *| *tipo *| *bytes *| *permite_null")
->>>>>>> 346886d55eacd2d0e7a1a36f50bfa55894d781fe
       ;; Ve tomando de registro en registro
       (while (re-search-forward expcol nil t)
         ;; Transforma cada registro en una columna del create
