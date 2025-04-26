@@ -838,6 +838,9 @@ tabla entre initab y fintab."
 
 ;; TODO: Algunas tablas muy grandes hacen que se vuelva un disparate la "reparación de la tabla".
 ;; TODO: Habría que hacer alguna manera de probar de manera automática casos de tablas que debe poder reparar esta función.
+;; TODO: Cuando se está reparando la tabla el usuario puede ver el cursor moviendose, lo correcto fuera que el usuario solo viera el resultado de la reparación y quizas algún tipo de indicación de progreso.
+;; TODO: Quizas fuera más fácil hacer la reparación completa en memoria y solo hacer en el buffer la parte de capturar la tabla.
+;; TODO: La región no se está usando realmente, no se está tomando en cuenta.
 (defun repair-sqltable-ms (&optional start end)
   "A function to repair a table output from osql on a sqli buffer.
 
