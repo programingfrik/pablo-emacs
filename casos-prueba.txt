@@ -6,7 +6,7 @@ Prueba repair-sqltable-ms descripción servidor
 <cursor>
 
 
----resultado----
+----resultado----
 
 ======================================================================
 Prueba rapair-sqltable-ms tabla pequeña
@@ -32,3 +32,96 @@ go
 <cursor>
 
 ======================================================================
+Prueba repair-sqltable-ms tabla pequeña 2
+(repair-sqltable-ms)
+----prueba----
+select 1
+go
+1> 2> 3> 4>            
+-----------
+          1
+
+(1 rows affected)
+<cursor>
+
+----resultado----
+select 1
+go
+1> 2> 3> 4>
+
+-
+1
+
+(1 rows affected)
+<cursor>
+
+======================================================================
+Prueba repair-sqltable-ms tabla descripción
+(repair-sqltable-ms)
+----prueba----
+
+1> select @@servername servidor, DB_NAME() base_datos, SYSTEM_USER usuario, @@servicename servicio, @@version version
+   go
+
+ 3> servidor                                                                                                                        |base_datos                                                                                                                      |usuario                                                                                                                         |servicio                                                                                                                        |version                                                                                                                                                                                                                                                                                                     
+--------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+mssql1                                                                                                                          |master                                                                                                                          |sa                                                                                                                              |MSSQLSERVER                                                                                                                     |Microsoft SQL Server 2022 (RTM-CU10) (KB5031778) - 16.0.4095.4 (X64) 
+	Oct 30 2023 16:12:44 
+	Copyright (C) 2022 Microsoft Corporation
+	Developer Edition (64-bit) on Linux (Ubuntu 22.04.3 LTS) <X64>                                                                                                      
+
+(1 rows affected)
+<cursor>
+----resultado----
+
+
+1> select @@servername servidor, DB_NAME() base_datos, SYSTEM_USER usuario, @@servicename servicio, @@version version
+   go
+
+ 3>
+servidor|base_datos|usuario|servicio   |version                                                                                                                                                                                                       
+--------|----------|-------|-----------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+mssql1  |master    |sa     |MSSQLSERVER|Microsoft SQL Server 2022 (RTM-CU10) (KB5031778) - 16.0.4095.4 (X64) 	Oct 30 2023 16:12:44 	Copyright (C) 2022 Microsoft Corporation	Developer Edition (64-bit) on Linux (Ubuntu 22.04.3 LTS) <X64>
+
+(1 rows affected)
+<cursor>
+======================================================================
+Prueba repair-sqltable-ms descripción servidor
+(repair-sqltable-ms)
+----prueba----
+select name from sysdatabases order by name
+go
+
+ 2> 3> 4> 5> 6> name                                                                                                                            
+--------------------------------------------------------------------------------------------------------------------------------
+db_ap_v2019                                                                                                                     
+dbPadron_JCE                                                                                                                    
+dbPadron_JCE_20240110                                                                                                           
+gestionbrr                                                                                                                      
+master                                                                                                                          
+model                                                                                                                           
+msdb                                                                                                                            
+tempdb                                                                                                                          
+
+(8 rows affected)
+<cursor>
+
+----resultado----
+select name from sysdatabases order by name
+go
+
+ 2> 3> 4> 5> 6>
+name                 
+---------------------
+db_ap_v2019          
+dbPadron_JCE         
+dbPadron_JCE_20240110
+gestionbrr           
+master               
+model                
+msdb                 
+tempdb               
+
+(8 rows affected)
+<cursor>
+
