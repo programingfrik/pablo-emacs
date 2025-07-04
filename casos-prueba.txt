@@ -125,3 +125,34 @@ tempdb
 (8 rows affected)
 <cursor>
 
+======================================================================
+Prueba repair-sqltable-ms descripción servidor
+(repair-sqltable-ms)
+----prueba----
+
+select @@servername servidor, DB_NAME() base_datos, SYSTEM_USER usuario, @@servicename servicio, @@version version
+go
+
+servidor                                                                                                                        |base_datos                                                                                                                      |usuario                                                                                                                         |servicio                                                                                                                        |version                                                                                                                                                                                                                                                                                                     
+--------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+S462-EIKON                                                                                                                      |Eikon_Brrd                                                                                                                      |eikonprueba                                                                                                                     |MSSQLSERVER                                                                                                                     |Microsoft SQL Server 2022 (RTM-CU15) (KB5041321) - 16.0.4145.4 (X64) 
+	Sep 19 2024 08:25:04 
+	Copyright (C) 2022 Microsoft Corporation
+	Developer Edition (64-bit) on Windows Server 2019 Standard 10.0 <X64> (Build 17763: ) (Hypervisor)
+                                                                 
+
+(1 rows affected)
+<cursor>
+
+----resultado----
+
+select @@servername servidor, DB_NAME() base_datos, SYSTEM_USER usuario, @@servicename servicio, @@version version
+go
+
+servidor  |base_datos|usuario    |servicio   |version                                                                                                                                                                                                                                     
+----------|----------|-----------|-----------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+S462-EIKON|Eikon_Brrd|eikonprueba|MSSQLSERVER|Microsoft SQL Server 2022 (RTM-CU15) (KB5041321) - 16.0.4145.4 (X64) 	Sep 19 2024 08:25:04 	Copyright (C) 2022 Microsoft Corporation	Developer Edition (64-bit) on Windows Server 2019 Standard 10.0 <X64> (Build 17763: ) (Hypervisor) 
+
+(1 rows affected)
+<cursor>
+
