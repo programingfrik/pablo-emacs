@@ -30,29 +30,43 @@
 
 (defun probar-casos-prueba ()
   "Una función para hacer las pruebas de casos-prueba.txt."
-
+  (interactive)
   ;; Crea un buffer temporal
-  tbuffer (generate-new-buffer "*buffer-temp-pruebas*" 't)
+  (let
+      ((tbuffich (generate-new-buffer "*buffer-todo-caso*" 't))
+       (tbuffer (generate-new-buffer "*buffer-caso*")))
+    (save-excursion
+      (save-restriction
+        ;; Cambia el buffer actual a otro
+        (set-buffer tbuffich)
 
-  ;; Lee un caso de prueba
+        ;; Lee todo el fichero
+        (insert-file-contents "casos-prueba.txt")
 
-  ;; Pon el estado inicial del caso
+        ;; Para cada caso
 
-  ;; Pon el cursor en su sitio
+        ;; Copia un caso de prueba a otro buffer temporal
 
-  ;; Corre la función en cuestión
+        ;; Lee un caso de prueba
 
-  ;; Compara el estado del buffer con el resultado esperado.
+        ;; Pon el estado inicial del caso
 
-  ;; Reportar si está igual o no el resultado de la prueba
+        ;; Pon el cursor en su sitio
 
-  ;; Pasar al siguiente caso de prueba
+        ;; Corre la función en cuestión
 
-  ;; Cuando se terminen todos los casos de prueba
+        ;; Compara el estado del buffer con el resultado esperado.
 
-  ;; Cerrar el buffer temporal que creamos
-  (kill-buffer tbuffer)
+        ;; Reportar si está igual o no el resultado de la prueba
 
+        ;; Pasar al siguiente caso de prueba
+
+        ;; Cuando se terminen todos los casos de prueba
+
+        ;; Cerrar el buffer temporal que creamos
+        ) )
+    ;; (kill-buffer tbuffer)
+    ;; (kill-buffer tbuffich)
+    )
   ;; Fin
-
   )
