@@ -31,42 +31,85 @@
 (defun probar-casos-prueba ()
   "Una función para hacer las pruebas de casos-prueba.txt."
   (interactive)
-  ;; Crea un buffer temporal
   (let
-      ((tbuffich (generate-new-buffer "*buffer-todo-caso*" 't))
-       (tbuffer (generate-new-buffer "*buffer-caso*")))
+      ((tbfich (generate-new-buffer "*tbfich*" 't))
+       (tbprueba (generate-new-buffer "*tbprueba*"))
+       (tbresultado (generate-new-buffer "*tbresultado*"))
+       (expdiv "=\\{70\\}\n")
+       (expdiv2 "-\\{4\\}")
+       (cursor "<cursor>")
+       posini posbar posfin subini subfin)
     (save-excursion
       (save-restriction
-        ;; Cambia el buffer actual a otro
-        (set-buffer tbuffich)
+        ;; Cambia el buffer actual al buffer del fichero con los casos de prueba.
+        (set-buffer tbfich)
 
         ;; Lee todo el fichero
         (insert-file-contents "casos-prueba.txt")
+        (goto-char (point-min))
+        (setq posfin (point-min))
 
         ;; Para cada caso
 
-        ;; Copia un caso de prueba a otro buffer temporal
+        ;; Mientras no sea el final del fichero
+        ;; (while (< posfin (point-max))
 
-        ;; Lee un caso de prueba
+          (setq posini posfin)
 
-        ;; Pon el estado inicial del caso
+          (re-search-forward expdiv nil 'end)
+          (setq posbar (match-beginning 0)
+                posfin (match-end 0))
 
-        ;; Pon el cursor en su sitio
+          ;; Copia la prueba a tbprueba
+          (goto-char posini)
+          (re-search-forward (concat expdiv2 "prueba" expdiv2 "\n") nil 'end)
+          (setq subini (match-end 0))
 
-        ;; Corre la función en cuestión
+          (re-search-forward (concat expdiv2 "resultado" expdiv2 "\n") nil 'end)
+          (setq subfin (match-beginning 0))
 
-        ;; Compara el estado del buffer con el resultado esperado.
+          (set-buffer tbprueba)
+          (erase-buffer)
+          (insert-buffer-substring tbfich subini subfin)
 
-        ;; Reportar si está igual o no el resultado de la prueba
+          ;; Copia el resultado esperado a tbresultado
+          (set-buffer tbfich)
+          (setq subini (match-end 0)
+                subfin posbar)
 
-        ;; Pasar al siguiente caso de prueba
+          (set-buffer tbresultado)
+          (erase-buffer)
+          (insert-buffer-substring tbfich subini subfin)
+
+          ;; Pon el cursor en su sitio en tbprueba, en donde está el texto "<cursor>"
+          (set-buffer tbprueba)
+          (goto-char (point-min))
+          (re-search-forward cursor nil 'end)
+
+          ;; Quita el texto "<cursor>"
+          (replace-match "")
+
+          ;; Corre la función en cuestión
+
+          ;; Vuelve a poner el texto "<cursor>" donde quedó el cursor.
+          (insert cursor)
+
+          ;; Compara el contenido tbprueba con tbresultado, deberían ser iguales, sino lo son falló la prueba.
+          ;; (diff-buffers tbprueba tbresultado)
+
+          ;; Reportar si está igual o no el resultado de la prueba
+
+          ;; Pasar al siguiente caso de prueba
+          (goto-char posfin)
+          ;; )
 
         ;; Cuando se terminen todos los casos de prueba
 
-        ;; Cerrar el buffer temporal que creamos
         ) )
-    ;; (kill-buffer tbuffer)
-    ;; (kill-buffer tbuffich)
+    ;; Antes de cerrar el let hay que eliminar los buffers porque se van a perder las variables
+    ;; (kill-buffer tbfich)
+    ;; (kill-buffer tbprueba)
+    ;; (kill-buffer tbresultado)
     )
   ;; Fin
   )
