@@ -8,6 +8,11 @@ Prueba repair-sqltable-ms descripción servidor
 
 ----resultado----
 
+
+<cursor>
+
+
+
 ======================================================================
 Prueba rapair-sqltable-ms tabla pequeña
 (repair-sqltable-ms)
@@ -56,7 +61,7 @@ go
 <cursor>
 
 ======================================================================
-Prueba repair-sqltable-ms tabla descripción
+Prueba repair-sqltable-ms tabla descripción servidor
 (repair-sqltable-ms)
 ----prueba----
 
@@ -86,7 +91,7 @@ mssql1  |master    |sa     |MSSQLSERVER|Microsoft SQL Server 2022 (RTM-CU10) (KB
 (1 rows affected)
 <cursor>
 ======================================================================
-Prueba repair-sqltable-ms descripción servidor
+Prueba repair-sqltable-ms bases de datos
 (repair-sqltable-ms)
 ----prueba----
 select name from sysdatabases order by name
@@ -94,10 +99,10 @@ go
 
  2> 3> 4> 5> 6> name                                                                                                                            
 --------------------------------------------------------------------------------------------------------------------------------
-db_ap_v2019                                                                                                                     
-dbPadron_JCE                                                                                                                    
-dbPadron_JCE_20240110                                                                                                           
-gestionbrr                                                                                                                      
+andrewdb315                                                                                                                     
+Data_User_02                                                                                                                    
+Data_User_02_20240110                                                                                                           
+productos1                                                                                                                      
 master                                                                                                                          
 model                                                                                                                           
 msdb                                                                                                                            
@@ -113,10 +118,10 @@ go
  2> 3> 4> 5> 6>
 name                 
 ---------------------
-db_ap_v2019          
-dbPadron_JCE         
-dbPadron_JCE_20240110
-gestionbrr           
+andrewdb315          
+Data_User_02         
+Data_User_02_20240110
+productos1           
 master               
 model                
 msdb                 
@@ -126,7 +131,7 @@ tempdb
 <cursor>
 
 ======================================================================
-Prueba repair-sqltable-ms descripción servidor
+Prueba repair-sqltable-ms tabla descripción servidor 2
 (repair-sqltable-ms)
 ----prueba----
 
@@ -135,7 +140,7 @@ go
 
 servidor                                                                                                                        |base_datos                                                                                                                      |usuario                                                                                                                         |servicio                                                                                                                        |version                                                                                                                                                                                                                                                                                                     
 --------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-S462-EIKON                                                                                                                      |Eikon_Brrd                                                                                                                      |eikonprueba                                                                                                                     |MSSQLSERVER                                                                                                                     |Microsoft SQL Server 2022 (RTM-CU15) (KB5041321) - 16.0.4145.4 (X64) 
+DBSERVER01                                                                                                                      |candy_data                                                                                                                      |factappuser                                                                                                                     |MSSQLSERVER                                                                                                                     |Microsoft SQL Server 2022 (RTM-CU15) (KB5041321) - 16.0.4145.4 (X64) 
 	Sep 19 2024 08:25:04 
 	Copyright (C) 2022 Microsoft Corporation
 	Developer Edition (64-bit) on Windows Server 2019 Standard 10.0 <X64> (Build 17763: ) (Hypervisor)
@@ -151,7 +156,7 @@ go
 
 servidor  |base_datos|usuario    |servicio   |version                                                                                                                                                                                                                                     
 ----------|----------|-----------|-----------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-S462-EIKON|Eikon_Brrd|eikonprueba|MSSQLSERVER|Microsoft SQL Server 2022 (RTM-CU15) (KB5041321) - 16.0.4145.4 (X64) 	Sep 19 2024 08:25:04 	Copyright (C) 2022 Microsoft Corporation	Developer Edition (64-bit) on Windows Server 2019 Standard 10.0 <X64> (Build 17763: ) (Hypervisor) 
+DBSERVER01|candy_data|factappuser|MSSQLSERVER|Microsoft SQL Server 2022 (RTM-CU15) (KB5041321) - 16.0.4145.4 (X64) 	Sep 19 2024 08:25:04 	Copyright (C) 2022 Microsoft Corporation	Developer Edition (64-bit) on Windows Server 2019 Standard 10.0 <X64> (Build 17763: ) (Hypervisor) 
 
 (1 rows affected)
 <cursor>
