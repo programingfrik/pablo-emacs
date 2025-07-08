@@ -38,7 +38,7 @@
        (expdiv "=\\{70\\}\n")
        (expdiv2 "-\\{4\\}")
        (cursor "<cursor>")
-       posini posbar posfin subini subfin)
+       posini posbar posfin subini subfin titulo comando)
     (save-excursion
       (save-restriction
         ;; Cambia el buffer actual al buffer del fichero con los casos de prueba.
@@ -55,6 +55,13 @@
         ;; (while (< posfin (point-max))
 
           (setq posini posfin)
+
+          ;; Lee el título
+          (message "Prueba: %s" (buffer-substring (line-beginning-position) (line-end-position)))
+
+          ;; Pon un mensaje diciendo cual prueba estamos ejecutando.
+
+          ;; Lee el comando que hay que ejecutar.
 
           (re-search-forward expdiv nil 'end)
           (setq posbar (match-beginning 0)
@@ -100,6 +107,7 @@
           ;; Reportar si está igual o no el resultado de la prueba
 
           ;; Pasar al siguiente caso de prueba
+          (set-buffer tbfich)
           (goto-char posfin)
           ;; )
 
