@@ -56,12 +56,12 @@
 
           (setq posini posfin)
 
-          ;; Lee el título
-          (message "Prueba: %s" (buffer-substring (line-beginning-position) (line-end-position)))
-
-          ;; Pon un mensaje diciendo cual prueba estamos ejecutando.
+          ;; Lee el título y pon un mensaje diciendo cual prueba estamos ejecutando.
+          (message "Prueba: %s"
+                   (buffer-substring (line-beginning-position) (line-end-position)))
 
           ;; Lee el comando que hay que ejecutar.
+
 
           (re-search-forward expdiv nil 'end)
           (setq posbar (match-beginning 0)
