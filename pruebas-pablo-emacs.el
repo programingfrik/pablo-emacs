@@ -60,7 +60,9 @@
           (message "Prueba: %s"
                    (buffer-substring (line-beginning-position) (line-end-position)))
 
-          ;; Lee el comando que hay que ejecutar.
+          ;; Lee el comando que hay que ejecutar para la prueba.
+          ;; (eval)?? elisp reference 10.5
+          ;; (read)?? elisp reference 20.3
 
 
           (re-search-forward expdiv nil 'end)
