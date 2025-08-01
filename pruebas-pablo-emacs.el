@@ -41,7 +41,7 @@
        posini posbar posfin subini subfin titulo comando)
     (save-excursion
       (save-restriction
-        ;; Cambia el buffer actual al buffer del fichero con los casos de prueba.
+        ;; Cambia al buffer del fichero con los casos de prueba.
         (set-buffer tbfich)
 
         ;; Lee todo el fichero
@@ -56,14 +56,16 @@
 
           (setq posini posfin)
 
-          ;; Lee el título y pon un mensaje diciendo cual prueba estamos ejecutando.
-          (message "Prueba: %s"
-                   (buffer-substring (line-beginning-position) (line-end-position)))
+          ;; Lee el título y ponlo en un mensaje para señalar la prueba actual.
+          (setq titulo (buffer-substring (line-beginning-position)
+                                         (line-end-position)))
+          (message "Prueba: %s" titulo)
 
           ;; Lee el comando que hay que ejecutar para la prueba.
-          ;; (eval)?? elisp reference 10.5
-          ;; (read)?? elisp reference 20.3
-
+          (forward-line)
+          (setq comando (read (buffer-substring (line-beginning-position)
+                                                (line-end-position))))
+          (message "Comando: %s" comando)
 
           (re-search-forward expdiv nil 'end)
           (setq posbar (match-beginning 0)
@@ -99,6 +101,7 @@
           (replace-match "")
 
           ;; Corre la función en cuestión
+          ;; (eval comando)
 
           ;; Vuelve a poner el texto "<cursor>" donde quedó el cursor.
           (insert cursor)
