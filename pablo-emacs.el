@@ -580,11 +580,10 @@ Right now it doesn't sopport comma characters as values embeded in quotes.
 
 (defun traer-linea-reversa (final)
   "Trae el inicio de una linea dado su final."
-  (let ((pos final))
-    (goto-char (1- pos))
-    (setq pos (1+ (re-search-backward "$")))
-    (message "Linea: inicio %i final %i longitud %i" pos final (- final pos))
-    (list pos final (- final pos)) ))
+  (goto-char final)
+  (let ((inil (pos-bol))
+	(finl (pos-eol)))
+    (list inil finl (- inil finl))) )
 
 (defun flanco-negativo-p (linant linact)
   "Detecta si hay un flanco negativo en las longitudes de las lineas."
