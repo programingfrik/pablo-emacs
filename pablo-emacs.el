@@ -170,27 +170,27 @@ Esta versión fue modificada por Pablo Mercader Alcántara para que
 permitia en la versión 23 de Emacs."
   (cond ((or (eq (framep (selected-frame)) 'w32)
              (and (eq (framep (selected-frame)) 't) (equal system-type 'windows-nt)))
-	 (if x-select-enable-clipboard
-	     (w32-set-clipboard-data text))
-	 (setq x-last-selected-text text))
-	((featurep 'ns)
-	 ;; Don't send the pasteboard too much text.
-	 ;; It becomes slow, and if really big it causes errors.
-	 (ns-set-pasteboard text)
-	 (setq ns-last-selected-text text))
-	(t
-	 ;; With multi-tty, this function may be called from a tty frame.
-	 (when (eq (framep (selected-frame)) 'x)
-	   (when x-select-enable-primary
-	     (x-set-selection 'PRIMARY text)
-	     (setq x-last-selected-text-primary text))
-	   (when x-select-enable-clipboard
-	     ;; When cutting, the selection is cleared and PRIMARY set to
-	     ;; the empty string.  Prevent that, PRIMARY should not be reset
-	     ;; by cut (Bug#16382).
-	     (setq saved-region-selection text)
-	     (x-set-selection 'CLIPBOARD text)
-	     (setq x-last-selected-text-clipboard text))))))
+     (if x-select-enable-clipboard
+         (w32-set-clipboard-data text))
+     (setq x-last-selected-text text))
+    ((featurep 'ns)
+     ;; Don't send the pasteboard too much text.
+     ;; It becomes slow, and if really big it causes errors.
+     (ns-set-pasteboard text)
+     (setq ns-last-selected-text text))
+    (t
+     ;; With multi-tty, this function may be called from a tty frame.
+     (when (eq (framep (selected-frame)) 'x)
+       (when x-select-enable-primary
+         (x-set-selection 'PRIMARY text)
+         (setq x-last-selected-text-primary text))
+       (when x-select-enable-clipboard
+         ;; When cutting, the selection is cleared and PRIMARY set to
+         ;; the empty string.  Prevent that, PRIMARY should not be reset
+         ;; by cut (Bug#16382).
+         (setq saved-region-selection text)
+         (x-set-selection 'CLIPBOARD text)
+         (setq x-last-selected-text-clipboard text))))))
 (when (and (eq emacs-major-version 24) (not (display-graphic-p)))
   (setq interprogram-cut-function 'pablo-select-text))
 
@@ -582,7 +582,7 @@ Right now it doesn't sopport comma characters as values embeded in quotes.
   "Trae el inicio de una linea dado su final."
   (goto-char final)
   (let ((inil (pos-bol))
-	(finl (pos-eol)))
+        (finl (pos-eol)))
     (list inil finl (- inil finl))) )
 
 (defun flanco-negativo-p (linant linact)
@@ -881,18 +881,23 @@ TODO: Esta función podría hacer recortes a las columnas para adaptarlas a un a
       (setq resultado (detectar-inicio-fin-tabla initab fintab)
             initab (nth 0 resultado)
             fintab (nth 1 resultado)
-            ancho (1+ (nth 2 resultado))
+            ancho (nth 2 resultado)
             alto (nth 3 resultado))
-      (message "inicio-tabla %i fin-tabla %i ancho %i alto %i" initab fintab ancho alto)
-      ;; Recorre toda el área, establece donde se dividen las columnas o sea su ancho.
-      (setq divisiones (detectar-divisiones-tabla initab fintab ancho alto))
-      (message "divisiones %s" divisiones)
-      ;; Recorre toda la tabla establece que tanto espacio se puede recortar de cada columna.
-      (setq espacios (detectar-espacios-blanco-tabla
-                      initab fintab ancho alto divisiones))
-      ;; (message "espacios %s" espacios)
-      ;; Recorta todo el espacio en blanco posible.
-      (recortar-espacios-tabla initab fintab ancho alto divisiones espacios) )))
+
+      (if (not (and initab fintab ancho alto (> alto 0)))
+          (message "Al parecer no hay tabla sobre la que trabajar")
+        (progn
+          (setq ancho (1+ ancho))
+          (message "inicio-tabla %i fin-tabla %i ancho %i alto %i" initab fintab ancho alto)
+          ;; Recorre toda el área, establece donde se dividen las columnas o sea su ancho.
+          (setq divisiones (detectar-divisiones-tabla initab fintab ancho alto))
+          (message "divisiones %s" divisiones)
+          ;; Recorre toda la tabla establece que tanto espacio se puede recortar de cada columna.
+          (setq espacios (detectar-espacios-blanco-tabla
+                          initab fintab ancho alto divisiones))
+          ;; (message "espacios %s" espacios)
+          ;; Recorta todo el espacio en blanco posible.
+          (recortar-espacios-tabla initab fintab ancho alto divisiones espacios) )))))
 
 
 ;; (defun sql-dentro-cadena (punto)
@@ -1052,10 +1057,10 @@ En una linea como esta:
   (save-excursion
     (let (reemp nomb (tam "") (stnull "NULL"))
       (re-search-backward "^")
-      (if (looking-at (concat "^[ 	]*\\([[:alnum:]_]+\\)[ 	|]+"
-                              "\\(\\w+\\)[ 	|]+"
-                              "\\([[:digit:]]+\\|NULL\\)[ 	|]+"
-                              "\\(YES\\|NO\\)[ 	]+$") )
+      (if (looking-at (concat "^[   ]*\\([[:alnum:]_]+\\)[  |]+"
+                              "\\(\\w+\\)[  |]+"
+                              "\\([[:digit:]]+\\|NULL\\)[   |]+"
+                              "\\(YES\\|NO\\)[  ]+$") )
           (progn
             (setq nomb (string-replace "_" "\\\\_" (match-string 1)))
             (unless (or (string= (downcase (match-string 2)) "text")
