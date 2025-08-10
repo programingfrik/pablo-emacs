@@ -1,4 +1,4 @@
-Prueba repair-sqltable-ms descripción servidor
+Sin data prueba vacia
 (repair-sqltable-ms)
 ----prueba----
 
@@ -14,7 +14,7 @@ Prueba repair-sqltable-ms descripción servidor
 
 
 ======================================================================
-Prueba rapair-sqltable-ms tabla pequeña
+Tabla minima una celda
 (repair-sqltable-ms)
 ----prueba----
 
@@ -37,7 +37,7 @@ go
 <cursor>
 
 ======================================================================
-Prueba repair-sqltable-ms tabla pequeña 2
+Tabla minima una celda 2
 (repair-sqltable-ms)
 ----prueba----
 select 1
