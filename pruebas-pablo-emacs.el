@@ -33,6 +33,27 @@
   (erase-buffer)
   (insert-buffer-substring borig ini fin) )
 
+(defun comparar-resultado-prueba (tbresultado tbprueba)
+  (let ((txigual "Diff finished (no differences).")
+        (buffer-actual (current-buffer))
+        dbuffer resultado)
+    (diff-buffers tbresultado tbprueba)
+    (setq dbuffer (get-buffer "*Diff*"))
+    (set-buffer dbuffer)
+    (setq resultado (re-search-forward txigual nil 'end))
+    ;; Reportar si está igual o no el resultado de la prueba
+    (if resultado
+        (message "La prueba fue exitosa!")
+      (progn
+        (message "La prueba falló!")
+        (goto-char (point-min))
+        (forward-line)
+        (message (buffer-substring-no-properties
+                  (point) (point-max))) ))
+    (set-buffer buffer-actual)
+    (kill-buffer dbuffer)
+    resultado ))
+
 (defun probar-caso-avanzar (posfin tbfich tbprueba tbresultado)
   (let ((expdiv "=\\{70\\}\n")
         (expdiv2 "-\\{4\\}")
@@ -44,7 +65,7 @@
     ;; Lee el título y ponlo en un mensaje para señalar la prueba actual.
     (setq titulo (buffer-substring (line-beginning-position)
                                    (line-end-position)))
-    (message "Prueba: %s" titulo)
+    (message "***********\nPrueba: %s\n***********" titulo)
 
     ;; Lee el comando que hay que ejecutar para la prueba.
     (forward-line)
@@ -87,10 +108,9 @@
     ;; Vuelve a poner el texto "<cursor>" donde quedó el cursor.
     (insert cursor)
 
-    ;; Compara el contenido tbprueba con tbresultado, deberían ser iguales, sino lo son falló la prueba.
-    ;; (diff-buffers tbprueba tbresultado)
-
-    ;; Reportar si está igual o no el resultado de la prueba
+    ;; Compara el contenido tbresultado con tbprueba, deberían ser
+    ;; iguales, sino lo son falló la prueba.
+    (comparar-resultado-prueba tbresultado tbprueba)
 
     ;; Pasar al siguiente caso de prueba
     (set-buffer tbfich)
