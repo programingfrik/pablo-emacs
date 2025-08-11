@@ -58,14 +58,22 @@
   (let ((expdiv "=\\{70\\}\n")
         (expdiv2 "-\\{4\\}")
         (cursor "<cursor>")
-        posini posbar titulo comando subini subfin)
+        posini posbar titulo comando subini subfin temptit)
 
     (setq posini posfin)
 
     ;; Lee el título y ponlo en un mensaje para señalar la prueba actual.
     (setq titulo (buffer-substring (line-beginning-position)
                                    (line-end-position)))
-    (message "***********\nPrueba: %s\n***********" titulo)
+
+    (setq temptit (format "Prueba: %s" titulo))
+    (setq temptit (format-spec
+                   "%a\n%t\n%a"
+                   (list (cons ?a (make-string
+                                   (length temptit)
+                                   (string-to-char "*")))
+                         (cons ?t temptit) )))
+    (message temptit)
 
     ;; Lee el comando que hay que ejecutar para la prueba.
     (forward-line)
@@ -73,9 +81,11 @@
                                           (line-end-position))))
     (message "Comando: %s" comando)
 
-    (re-search-forward expdiv nil 'end)
-    (setq posbar (match-beginning 0)
-          posfin (match-end 0))
+    (if (re-search-forward expdiv nil 'end)
+        (setq posbar (match-beginning 0)
+              posfin (match-end 0))
+      (setq posbar (point-max)
+            posfin (point-max)))
 
     ;; Copia la prueba a tbprueba
     (goto-char posini)
