@@ -37,6 +37,8 @@
   (let ((txigual "Diff finished (no differences).")
         (buffer-actual (current-buffer))
         dbuffer resultado)
+    ;; FIXME: Cuando se ejecuta fuera del modo de depuración no lee el texto del buffer diff
+    ;; FIXME: Cuando se ejecuta fuera del modo de depuración no puede cerrar el buffer sin la interacción del usuario.
     (diff-buffers tbresultado tbprueba)
     (setq dbuffer (get-buffer "*Diff*"))
     (set-buffer dbuffer)
@@ -58,7 +60,7 @@
   (let ((expdiv "=\\{70\\}\n")
         (expdiv2 "-\\{4\\}")
         (cursor "<cursor>")
-        posini posbar titulo comando subini subfin temptit)
+        posini posbar titulo comando subini subfin temptit exito)
 
     (setq posini posfin)
 
@@ -120,11 +122,12 @@
 
     ;; Compara el contenido tbresultado con tbprueba, deberían ser
     ;; iguales, sino lo son falló la prueba.
-    (comparar-resultado-prueba tbresultado tbprueba)
+    (setq exito (comparar-resultado-prueba tbresultado tbprueba))
 
     ;; Pasar al siguiente caso de prueba
     (set-buffer tbfich)
-    (goto-char posfin) ))
+    (goto-char posfin)
+    (list posfin exito) ))
 
 (defun probar-casos-prueba (&optional n)
   "Una función para hacer las pruebas de casos-prueba.txt."
@@ -133,8 +136,8 @@
       ((tbfich (generate-new-buffer "*tbfich*" 't))
        (tbprueba (generate-new-buffer "*tbprueba*"))
        (tbresultado (generate-new-buffer "*tbresultado*"))
-       (cont 0)
-       pos)
+       (cont 0) (cexito 0)
+       pos rescaso)
     (save-excursion
       (save-restriction
         ;; Cambia al buffer del fichero con los casos de prueba.
@@ -151,18 +154,28 @@
         ;; Mientras no sea el final del fichero
         (while (< pos (point-max))
 
-          (setq pos (probar-caso-avanzar pos tbfich tbprueba
-                                         tbresultado))
+          (setq rescaso (probar-caso-avanzar pos tbfich tbprueba
+                                             tbresultado))
+          (when (car (cdr rescaso))
+            (setq cexito (1+ cexito)))
 
+          (setq pos (car rescaso)
+                cont (1+ cont))
           )
 
         ;; Cuando se terminen todos los casos de prueba
 
         ) )
-    ;; Antes de cerrar el let hay que eliminar los buffers porque se van a perder las variables
+    ;; Antes de cerrar el let hay que eliminar los buffers porque se
+    ;; van a perder las variables
     (kill-buffer tbfich)
     (kill-buffer tbprueba)
     (kill-buffer tbresultado)
+
+    (message (concat "Pruebas realizadas %d\n"
+                     "Pruebas exitosas %d\n"
+                     "Pruebas fallidas %d")
+             cont cexito (- cont cexito))
     )
   ;; Fin
   )
