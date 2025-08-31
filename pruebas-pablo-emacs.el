@@ -39,7 +39,7 @@
         dbuffer resultado)
     ;; FIXME: Cuando se ejecuta fuera del modo de depuración no lee el texto del buffer diff
     ;; FIXME: Cuando se ejecuta fuera del modo de depuración no puede cerrar el buffer sin la interacción del usuario.
-    (diff-buffers tbresultado tbprueba)
+    (diff-no-select tbresultado tbprueba nil 't nil)
     (setq dbuffer (get-buffer "*Diff*"))
     (set-buffer dbuffer)
     (setq resultado (re-search-forward txigual nil 'end))
