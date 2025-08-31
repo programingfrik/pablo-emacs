@@ -61,7 +61,7 @@ go
 <cursor>
 
 ======================================================================
-Prueba repair-sqltable-ms tabla descripción servidor
+Prueba reparar tabla descripción servidor
 (repair-sqltable-ms)
 ----prueba----
 
@@ -91,7 +91,7 @@ mssql1  |master    |sa     |MSSQLSERVER|Microsoft SQL Server 2022 (RTM-CU10) (KB
 (1 rows affected)
 <cursor>
 ======================================================================
-Prueba repair-sqltable-ms bases de datos
+Reparar lista de bases de datos
 (repair-sqltable-ms)
 ----prueba----
 select name from sysdatabases order by name
@@ -131,7 +131,7 @@ tempdb
 <cursor>
 
 ======================================================================
-Prueba repair-sqltable-ms tabla descripción servidor 2
+Prueba reparar tabla descripción servidor 2
 (repair-sqltable-ms)
 ----prueba----
 
