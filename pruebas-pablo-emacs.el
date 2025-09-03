@@ -37,9 +37,6 @@
   (let ((txigual "Diff finished (no differences).")
         (buffer-actual (current-buffer))
         dbuffer resultado)
-    ;; FIXME: Cuando se ejecuta fuera del modo de depuración no lee el texto del buffer diff
-    ;; FIXME: Cuando se ejecuta fuera del modo de depuración no puede cerrar el buffer sin la interacción del usuario.\
-    (require 'diff)
     (diff-no-select tbresultado tbprueba nil 't nil)
     (setq dbuffer (get-buffer "*Diff*"))
     (set-buffer dbuffer)
@@ -140,6 +137,11 @@
        pos rescaso final)
     (save-excursion
       (save-restriction
+
+        ;; Necesitamos diff para comparar lo esperado con el
+        ;; resultado.
+        (require 'diff)
+
         ;; Cambia al buffer del fichero con los casos de prueba.
         (set-buffer tbfich)
 
@@ -152,14 +154,16 @@
         ;; Si n tiene un número solo ejecuta la prueba n, sino ejecuta
         ;; cada caso.
         (when (not (equal n nil))
+          (message "Solo vamos a ejecutar el caso %d" n)
+
           ;; Busca el punto en el que inicia este caso
-          (setq pos (re-search-forward nil 't (string-to-number n)))
+          (setq pos (re-search-forward expdiv nil 't n))
+
           ;; Busca el punto en que termina este caso
-          (if (re-search-forward nil 'end)
+          (if (re-search-forward expdiv nil 'end)
               (setq final (match-beginning 0))
             (setq final (point)))
-          (goto-char pos)
-          )
+          (goto-char pos) )
 
         ;; Mientras no sea el final
         (while (< pos final)
@@ -170,8 +174,7 @@
             (setq cexito (1+ cexito)))
 
           (setq pos (car rescaso)
-                cont (1+ cont))
-          )
+                cont (1+ cont)) )
 
         ) )
     ;; Cuando se terminen todos los casos de prueba hay que hacer un
