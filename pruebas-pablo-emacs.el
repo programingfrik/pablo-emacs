@@ -38,7 +38,8 @@
         (buffer-actual (current-buffer))
         dbuffer resultado)
     ;; FIXME: Cuando se ejecuta fuera del modo de depuración no lee el texto del buffer diff
-    ;; FIXME: Cuando se ejecuta fuera del modo de depuración no puede cerrar el buffer sin la interacción del usuario.
+    ;; FIXME: Cuando se ejecuta fuera del modo de depuración no puede cerrar el buffer sin la interacción del usuario.\
+    (require 'diff)
     (diff-no-select tbresultado tbprueba nil 't nil)
     (setq dbuffer (get-buffer "*Diff*"))
     (set-buffer dbuffer)
@@ -56,9 +57,8 @@
     (kill-buffer dbuffer)
     resultado ))
 
-(defun probar-caso-avanzar (posfin tbfich tbprueba tbresultado)
-  (let ((expdiv "=\\{70\\}\n")
-        (expdiv2 "-\\{4\\}")
+(defun probar-caso-avanzar (expdiv posfin tbfich tbprueba tbresultado)
+  (let ((expdiv2 "-\\{4\\}")
         (cursor "<cursor>")
         posini posbar titulo comando subini subfin temptit exito)
 
@@ -131,13 +131,13 @@
 
 (defun probar-casos-prueba (&optional n)
   "Una función para hacer las pruebas de casos-prueba.txt."
-  (interactive)
+  (interactive "P")
   (let
       ((tbfich (generate-new-buffer "*tbfich*" 't))
        (tbprueba (generate-new-buffer "*tbprueba*"))
        (tbresultado (generate-new-buffer "*tbresultado*"))
-       (cont 0) (cexito 0)
-       pos rescaso)
+       (cont 0) (cexito 0) (expdiv "=\\{70\\}\n")
+       pos rescaso final)
     (save-excursion
       (save-restriction
         ;; Cambia al buffer del fichero con los casos de prueba.
@@ -146,16 +146,26 @@
         ;; Lee todo el fichero
         (insert-file-contents "casos-prueba.txt")
         (goto-char (point-min))
-        (setq pos (point-min))
+        (setq pos (point-min)
+              final (point-max))
 
         ;; Si n tiene un número solo ejecuta la prueba n, sino ejecuta
         ;; cada caso.
+        (when (not (equal n nil))
+          ;; Busca el punto en el que inicia este caso
+          (setq pos (re-search-forward nil 't (string-to-number n)))
+          ;; Busca el punto en que termina este caso
+          (if (re-search-forward nil 'end)
+              (setq final (match-beginning 0))
+            (setq final (point)))
+          (goto-char pos)
+          )
 
-        ;; Mientras no sea el final del fichero
-        (while (< pos (point-max))
+        ;; Mientras no sea el final
+        (while (< pos final)
 
-          (setq rescaso (probar-caso-avanzar pos tbfich tbprueba
-                                             tbresultado))
+          (setq rescaso (probar-caso-avanzar expdiv pos tbfich
+                                             tbprueba tbresultado))
           (when (car (cdr rescaso))
             (setq cexito (1+ cexito)))
 
@@ -163,19 +173,18 @@
                 cont (1+ cont))
           )
 
-        ;; Cuando se terminen todos los casos de prueba
-
         ) )
-    ;; Antes de cerrar el let hay que eliminar los buffers porque se
-    ;; van a perder las variables
-    (kill-buffer tbfich)
-    (kill-buffer tbprueba)
-    (kill-buffer tbresultado)
-
+    ;; Cuando se terminen todos los casos de prueba hay que hacer un
+    ;; sumario.
     (message (concat "Pruebas realizadas %d\n"
                      "Pruebas exitosas %d\n"
                      "Pruebas fallidas %d")
              cont cexito (- cont cexito))
-    )
+
+    ;; Antes de cerrar el let hay que eliminar los buffers porque se
+    ;; van a perder las variables
+    (kill-buffer tbfich)
+    (kill-buffer tbprueba)
+    (kill-buffer tbresultado) )
   ;; Fin
   )
