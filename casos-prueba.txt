@@ -156,7 +156,7 @@ go
 
 servidor  |base_datos|usuario    |servicio   |version                                                                                                                                                                                                                                     
 ----------|----------|-----------|-----------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-DBSERVER01|candy_data|factappuser|MSSQLSERVER|Microsoft SQL Server 2022 (RTM-CU15) (KB5041321) - 16.0.4145.4 (X64) 	Sep 19 2024 08:25:04 	Copyright (C) 2022 Microsoft Corporation	Developer Edition (64-bit) on Windows Server 2019 Standard 10.0 <X64> (Build 17763: ) (Hypervisor) 
+DBSERVER01|candy_data|factappuser|MSSQLSERVER|Microsoft SQL Server 2022 (RTM-CU15) (KB5041321) - 16.0.4145.4 (X64) 	Sep 19 2024 08:25:04 	Copyright (C) 2022 Microsoft Corporation	Developer Edition (64-bit) on Windows Server 2019 Standard 10.0 <X64> (Build 17763: ) (Hypervisor)
 
 (1 rows affected)
 <cursor>
