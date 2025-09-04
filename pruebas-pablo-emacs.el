@@ -126,6 +126,10 @@
     (goto-char posfin)
     (list posfin exito) ))
 
+;; TODO: Agregar tiempo que toma cada caso.
+;; TODO: Hacer que funcionen todos los casos.
+;; TODO: Agregar casos de tablas "grandes" que rompen la función de reparación de tablas.
+;; TODO: Hacer casos de reparaciones de stored procedures.
 (defun probar-casos-prueba (&optional n)
   "Una función para hacer las pruebas de casos-prueba.txt."
   (interactive "P")
@@ -151,19 +155,26 @@
         (setq pos (point-min)
               final (point-max))
 
-        ;; Si n tiene un número solo ejecuta la prueba n, sino ejecuta
-        ;; cada caso.
-        (when (not (equal n nil))
+        ;; Si n tiene un número solo ejecuta la prueba n,
+        ;; sino ejecuta cada caso.
+        (when (and n (integerp n))
           (message "Solo vamos a ejecutar el caso %d" n)
 
           ;; Busca el punto en el que inicia este caso
-          (setq pos (re-search-forward expdiv nil 't n))
-
-          ;; Busca el punto en que termina este caso
-          (if (re-search-forward expdiv nil 'end)
-              (setq final (match-beginning 0))
-            (setq final (point)))
-          (goto-char pos) )
+          (if (setq pos (re-search-forward expdiv nil 't n))
+              (progn
+                ;; Si encontraste el inicio, busca el punto en que
+                ;; termina este caso
+                (if (re-search-forward expdiv nil 'end)
+                    (setq final (match-beginning 0))
+                  (setq final (point)) )
+                (goto-char pos) )
+            (progn
+              ;; Si no encontraste el inicio del caso no hay tal caso,
+              ;; vete al final.
+              (message "No hay caso %d" n)
+              (setq pos final) ))
+          )
 
         ;; Mientras no sea el final
         (while (< pos final)
