@@ -126,7 +126,18 @@
     (goto-char posfin)
     (list posfin exito) ))
 
-;; TODO: Agregar tiempo que toma cada caso.
+(defun decir-duracion (tiempo)
+  (let ((ts (time-convert tiempo 1000))
+        resto horas minutos segundos milesimas)
+    (setq resto (car ts)
+          milesimas (% resto 1000)
+          resto (/ resto 1000)
+          segundos (% resto 60)
+          resto (/ resto 60)
+          minutos (% resto 60)
+          horas (/ resto 60) )
+    (message "Tomó %d:%d:%d.%d" horas minutos segundos milesimas) ))
+
 ;; TODO: Hacer que funcionen todos los casos.
 ;; TODO: Agregar casos de tablas "grandes" que rompen la función de reparación de tablas.
 ;; TODO: Hacer casos de reparaciones de stored procedures.
@@ -138,7 +149,7 @@
        (tbprueba (generate-new-buffer "*tbprueba*"))
        (tbresultado (generate-new-buffer "*tbresultado*"))
        (cont 0) (cexito 0) (expdiv "=\\{70\\}\n")
-       pos rescaso final)
+       pos rescaso final tini dura)
     (save-excursion
       (save-restriction
 
@@ -179,13 +190,18 @@
         ;; Mientras no sea el final
         (while (< pos final)
 
-          (setq rescaso (probar-caso-avanzar expdiv pos tbfich
-                                             tbprueba tbresultado))
+          (setq tini (current-time)
+                rescaso (probar-caso-avanzar expdiv pos tbfich
+                                             tbprueba tbresultado)
+                dura (time-subtract (current-time) tini) )
+
           (when (car (cdr rescaso))
             (setq cexito (1+ cexito)))
 
           (setq pos (car rescaso)
-                cont (1+ cont)) )
+                cont (1+ cont))
+
+          (decir-duracion dura) )
 
         ) )
     ;; Cuando se terminen todos los casos de prueba hay que hacer un
