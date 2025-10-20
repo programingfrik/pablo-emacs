@@ -1,5 +1,5 @@
 Sin data prueba vacia
-(repair-sqltable-ms)
+(mssql-reformat-table)
 ----prueba----
 
 
@@ -16,7 +16,7 @@ Sin data prueba vacia
 
 ======================================================================
 Tabla minima una celda
-(repair-sqltable-ms)
+(mssql-reformat-table)
 ----prueba----
 
 select 1
@@ -39,7 +39,7 @@ go
 
 ======================================================================
 Tabla minima una celda 2
-(repair-sqltable-ms)
+(mssql-reformat-table)
 ----prueba----
 select 1
 go
@@ -63,7 +63,7 @@ go
 
 ======================================================================
 Prueba reparar tabla descripción servidor
-(repair-sqltable-ms)
+(mssql-reformat-table)
 ----prueba----
 
 1> select @@servername servidor, DB_NAME() base_datos, SYSTEM_USER usuario, @@servicename servicio, @@version version
@@ -93,7 +93,7 @@ mssql1  |master    |sa     |MSSQLSERVER|Microsoft SQL Server 2022 (RTM-CU10) (KB
 <cursor>
 ======================================================================
 Reparar lista de bases de datos
-(repair-sqltable-ms)
+(mssql-reformat-table)
 ----prueba----
 select name from sysdatabases order by name
 go
@@ -133,7 +133,7 @@ tempdb
 
 ======================================================================
 Prueba reparar tabla descripción servidor 2
-(repair-sqltable-ms)
+(mssql-reformat-table)
 ----prueba----
 
 select @@servername servidor, DB_NAME() base_datos, SYSTEM_USER usuario, @@servicename servicio, @@version version

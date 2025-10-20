@@ -834,13 +834,61 @@ tabla entre initab y fintab."
           (goto-char ini)
           (insert textocel) )))))
 
+(defun mssql-buscar-divisonv ()
+  (let (ini fin sep longr trunca lposep posept
+            lpostrun postrunt llmarcas lconmar
+            (cont 0) (pos 0) proxsalt sel salto expreg)
+    (when (re-search-backward
+           (concat "^[-\\n\\t]+\\(\\([^-\\n]\\)[-\\n\\t]+"
+                   "\\(\\2[-\\n\\t]+\\)*\\)?$"))
+      (setq ini (match-beginning 0)
+            fin (match-end 0)
+            sep (match-string-no-properties 2)
+            longr (length (match-string-no-properties 0))
+            trunca (string-search
+                    "\n\t" (match-string-no-properties 0)))
+      (when sep
+        (goto-char ini)
+        (setq lposep (list))
+        (while (setq posept (search-forward sep fin 'end))
+          (setq lposep (append lposep
+                               (list (- (1- posept) ini)))) )
+        )
+      (when trunca
+        (goto-char ini)
+        (setq lpostrun (list))
+        (while (setq postrunt (search-forward "\n\t" fin 'end))
+          (setq lpostrun (append postrunt
+                                 (list (- (1- postrunt) ini)))) )
+        )
+      (setq llmarcas (list lpossep lpostrun)
+            lconmar (make-list (length llmarcas) 0))
+      (while (< salto longr)
+        (setq salto longr
+              sel nil)
+        (dotimes (i (length llmarcas))
+          (when (and (nth i llmarca)
+                     (setq proxsalt
+                           (nth (nth i lconmar)
+                                (nth i llmarca)))
+                     (< proxsalt salto))
+            (setq sel i
+                  salto proxsalt)
+            ))
+        (when sel
+          (setcar (nthcdr sel lconmar)
+                  (1+ (nth sel lconmar)))
+          (setq expreg (concat expreg (format "[^\n\t]\{\}")))
+          )
+      )
+    (list ini fin sep longr lposep nil nil))) )
 
 ;; TODO: Habría que hacer alguna manera de probar de manera automática casos de tablas que debe poder reparar esta función.
 ;; TODO: Algunas tablas muy grandes hacen que se vuelva un disparate la "reparación de la tabla".
 ;; TODO: Cuando se está reparando la tabla el usuario puede ver el cursor moviendose, lo correcto fuera que el usuario solo viera el resultado de la reparación y quizas algún tipo de indicación de progreso.
 ;; TODO: Quizas fuera más fácil hacer la reparación completa en memoria y solo hacer en el buffer la parte de capturar la tabla.
 ;; TODO: La región no se está usando realmente, no se está tomando en cuenta.
-(defun repair-sqltable-ms (&optional start end)
+(defun mssql-reformat-table (&optional start end)
   "A function to repair a table output from osql on a sqli buffer.
 
 Para que esta función trabaje se recomienda que se usen las
@@ -855,49 +903,84 @@ TODO: Esta función podría hacer recortes a las columnas para adaptarlas a un a
    (list
     (if (use-region-p) (region-beginning))
     (if (use-region-p) (region-end)) ))
-  (save-excursion
-    (let (initab fintab resultado divisiones espacios)
-      ;; Si el usuario proporciona una región hay que señirse a esa región.
-      ;; Verifica si la región está activa.
-      (if (use-region-p)
-          ;; Determina el area que ocupa la tabla. Buscando asia atras.
-          (setq resultado (detectar-inicio-fin-area-tabla start end))
-        (setq resultado (detectar-inicio-fin-area-tabla (point-min) (point))) )
-      (setq initab (nth 0 resultado)
-            fintab (nth 1 resultado))
-      (message "inicio-tabla %i fin-tabla %i" initab fintab)
-      ;; Quitale todas las propiedades al texto de la tabla.
-      (set-text-properties initab fintab nil)
-      ;; Si los registros están truncados combina sus partes de forma
-      ;; que queden en una linea por registro.
-      (replace-regexp-in-region "\n\t" "" initab fintab)
-      (completar-tabla-divisiones initab fintab)
-      ;; Ahora cada registro de la tabla debería estar en una linea y
-      ;; todas las lineas que conforman la tabla deberían tener la
-      ;; misma longitud, y las divisiones en todas las lineas debería
-      ;; coincidir.
+  ;;(save-excursion
+    (let (tabla)
 
-      ;; Revisa donde realmente inicia y termina la tabla.
-      (setq resultado (detectar-inicio-fin-tabla initab fintab)
-            initab (nth 0 resultado)
-            fintab (nth 1 resultado)
-            ancho (nth 2 resultado)
-            alto (nth 3 resultado))
+      ;; Busca hacia atras la division vertical entre la cabecera y el cuerpo. Tiene que haber por lo menos 2 lineas la división vertical y un registro, ambos con la misma longitud las mismas separaciones y los mismos trunques..
+      (setq tabla (mssql-buscar-divisonv))
+      (message "%s" tabla)
+      ;; La variable tabla es una lista, el primer elemento es la pocision de inicio de la tabla, el segundo es la pocisión final, el tercero es el separador, el cuarto elemento es la longitud de un registro, la quinta cosa es una sublista con las posiciones de cada separador, elsexto elemento es una sublista, cada elemento de esa sublista es una pocisión donde el registro se trunca, el septimo elemento es una sublista con la información de las columnas.
 
-      (if (not (and initab fintab ancho alto (> alto 0)))
-          (message "Al parecer no hay tabla sobre la que trabajar")
-        (progn
-          (setq ancho (1+ ancho))
-          (message "inicio-tabla %i fin-tabla %i ancho %i alto %i" initab fintab ancho alto)
-          ;; Recorre toda el área, establece donde se dividen las columnas o sea su ancho.
-          (setq divisiones (detectar-divisiones-tabla initab fintab ancho alto))
-          (message "divisiones %s" divisiones)
-          ;; Recorre toda la tabla establece que tanto espacio se puede recortar de cada columna.
-          (setq espacios (detectar-espacios-blanco-tabla
-                          initab fintab ancho alto divisiones))
-          ;; (message "espacios %s" espacios)
-          ;; Recorta todo el espacio en blanco posible.
-          (recortar-espacios-tabla initab fintab ancho alto divisiones espacios) )))))
+      ;; Por cada columna hay una sublista, el primer elemento es la alineacion, el segundo elemento es la cantidad de espacio sobrante del registro con más caracteres de esa columna, o sea lo que se puede recortar de esa columna sin recortarle ni un caracter a ningún registro en esa columna.
+
+
+      ;; De la division vertical toma las divisiones horizontales, el caracter separador y los puntos donde está truncada la división vertical.
+
+      ;; Usando la información de las divisiones horizontales y el separador arma un patrón en forma de una expresión regular.
+
+      ;; Usa esa expresión para detectar tanto la cabecera como el cuerpo de la tabla.
+
+      ;; Ahora tienes el inicio y final de la tabla real
+
+      ;; Quitale las propiedades a todo el texto de la tabla
+
+      ;; Quitale los trunques que tenga la tabla
+
+      ;; Revisa los espacios en blanco de cada columna, cuanto se puede recortar y de que lado.
+
+      ;; Haz el recorte de los espacio
+
+      ;; Listo!
+
+      )
+    ;;)
+)
+
+
+
+
+    ;; (let (initab fintab resultado divisiones espacios)
+    ;;   ;; Si el usuario proporciona una región hay que señirse a esa región.
+    ;;   ;; Verifica si la región está activa.
+    ;;   (if (use-region-p)
+    ;;       ;; Determina el area que ocupa la tabla. Buscando asia atras.
+    ;;       (setq resultado (detectar-inicio-fin-area-tabla start end))
+    ;;     (setq resultado (detectar-inicio-fin-area-tabla (point-min) (point))) )
+    ;;   (setq initab (nth 0 resultado)
+    ;;         fintab (nth 1 resultado))
+    ;;   (message "inicio-tabla %i fin-tabla %i" initab fintab)
+    ;;   ;; Quitale todas las propiedades al texto de la tabla.
+    ;;   (set-text-properties initab fintab nil)
+    ;;   ;; Si los registros están truncados combina sus partes de forma
+    ;;   ;; que queden en una linea por registro.
+    ;;   (replace-regexp-in-region "\n\t" "" initab fintab)
+    ;;   (completar-atabla-divisiones initab fintab)
+    ;;   ;; Ahora cada registro de la tabla debería estar en una linea y
+    ;;   ;; todas las lineas que conforman la tabla deberían tener la
+    ;;   ;; misma longitud, y las divisiones en todas las lineas debería
+    ;;   ;; coincidir.
+    ;;
+    ;;   ;; Revisa donde realmente inicia y termina la tabla.
+    ;;   (setq resultado (detectar-inicio-fin-tabla initab fintab)
+    ;;         initab (nth 0 resultado)
+    ;;         fintab (nth 1 resultado)
+    ;;         ancho (nth 2 resultado)
+    ;;         alto (nth 3 resultado))
+    ;;
+    ;;   (if (not (and initab fintab ancho alto (> alto 0)))
+    ;;       (message "Al parecer no hay tabla sobre la que trabajar")
+    ;;     (progn
+    ;;       (setq ancho (1+ ancho))
+    ;;       (message "inicio-tabla %i fin-tabla %i ancho %i alto %i" initab fintab ancho alto)
+    ;;       ;; Recorre toda el área, establece donde se dividen las columnas o sea su ancho.
+    ;;       (setq divisiones (detectar-divisiones-tabla initab fintab ancho alto))
+    ;;       (message "divisiones %s" divisiones)
+    ;;       ;; Recorre toda la tabla establece que tanto espacio se puede recortar de cada columna.
+    ;;       (setq espacios (detectar-espacios-blanco-tabla
+    ;;                       initab fintab ancho alto divisiones))
+    ;;       ;; (message "espacios %s" espacios)
+    ;;       ;; Recorta todo el espacio en blanco posible.
+    ;;       (recortar-espacios-tabla initab fintab ancho alto divisiones espacios) )))))
 
 
 ;; (defun sql-dentro-cadena (punto)
