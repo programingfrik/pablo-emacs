@@ -835,9 +835,25 @@ tabla entre initab y fintab."
           (insert textocel) )))))
 
 (defun mssql-buscar-divisonv ()
-  (let (ini fin sep longr trunca lposep posept
-            lpostrun postrunt llmarcas lconmar
-            (cont 0) (pos 0) proxsalt sel salto expreg)
+  (let (ini ;; inicio de la tabla, hasta donde sabemos
+        fin ;; fin de la tabla, hasta donde sabemos
+        sep ;; el separador que se está usando
+        longr ;; longitud del registro
+        trunca ;; el registro está truncado o no
+        lposep ;; lista de pocisiones de separadores
+        posept ;; posicion de separador temporal
+        lpostrun ;; lista de posiciones de trunque
+        postrunt ;; posicion de trunque temporal
+        llmarcas ;; lista de lista de marcas
+        lconmar ;; lista de contadores de marcas
+        proxsalt ;; proximo salto
+        (saltant 0) ;; salto anterior
+        sel ;; marca seleccionada
+        (salto 0) ;; el salto que hace en una iteración
+        expreg ;; expresión regular general
+        (lsep (list "" "\n\t")) ;; La lista de separadores
+        sepact ;; separador actual
+        )
     (when (re-search-backward
            (concat "^[-\\n\\t]+\\(\\([^-\\n]\\)[-\\n\\t]+"
                    "\\(\\2[-\\n\\t]+\\)*\\)?$"))
@@ -861,16 +877,18 @@ tabla entre initab y fintab."
           (setq lpostrun (append postrunt
                                  (list (- (1- postrunt) ini)))) )
         )
-      (setq llmarcas (list lpossep lpostrun)
+      (setcar lsep sep)
+      (setq llmarcas (list lposep lpostrun)
             lconmar (make-list (length llmarcas) 0))
       (while (< salto longr)
         (setq salto longr
-              sel nil)
+              sel nil
+              sepact "")
         (dotimes (i (length llmarcas))
-          (when (and (nth i llmarca)
+          (when (and (nth i llmarcas)
                      (setq proxsalt
                            (nth (nth i lconmar)
-                                (nth i llmarca)))
+                                (nth i llmarcas)))
                      (< proxsalt salto))
             (setq sel i
                   salto proxsalt)
@@ -878,10 +896,21 @@ tabla entre initab y fintab."
         (when sel
           (setcar (nthcdr sel lconmar)
                   (1+ (nth sel lconmar)))
-          (setq expreg (concat expreg (format "[^\n\t]\{\}")))
-          )
-      )
-    (list ini fin sep longr lposep nil nil))) )
+          (setq sepact (nth sel lsep)))
+        (setq expreg (concat expreg
+                             (format "[^\\n\\t%s]\\{%d\\}%s"
+                                     sep (- salto saltant) sepact))
+              saltant (+ salto (length sepact)) )
+        )
+      (setq expreg (concat expreg "\n"))
+      (goto-char ini)
+      (when (looking-back expreg)
+        (setq ini (match-beginning 0)))
+      (goto-char fin)
+      (while (looking-at expreg)
+        (setq fin (match-end 0))
+        (goto-char fin))
+      (list ini fin sep longr lposep lpostrun nil) )))
 
 ;; TODO: Habría que hacer alguna manera de probar de manera automática casos de tablas que debe poder reparar esta función.
 ;; TODO: Algunas tablas muy grandes hacen que se vuelva un disparate la "reparación de la tabla".
