@@ -862,21 +862,22 @@ tabla entre initab y fintab."
             sep (match-string-no-properties 2)
             longr (length (match-string-no-properties 0))
             trunca (string-search
-                    "\n\t" (match-string-no-properties 0)))
+                    "\n\t" (match-string-no-properties 0) ))
+
       (when sep
         (goto-char ini)
         (setq lposep (list))
         (while (setq posept (search-forward sep fin 'end))
           (setq lposep (append lposep
-                               (list (- (1- posept) ini)))) )
-        )
+                               (list (- (1- posept) ini)) ))))
+
       (when trunca
         (goto-char ini)
         (setq lpostrun (list))
         (while (setq postrunt (search-forward "\n\t" fin 'end))
           (setq lpostrun (append postrunt
-                                 (list (- (1- postrunt) ini)))) )
-        )
+                                 (list (- (1- postrunt) ini)) ))))
+
       (setcar lsep sep)
       (setq llmarcas (list lposep lpostrun)
             lconmar (make-list (length llmarcas) 0))
@@ -891,8 +892,7 @@ tabla entre initab y fintab."
                                 (nth i llmarcas)))
                      (< proxsalt salto))
             (setq sel i
-                  salto proxsalt)
-            ))
+                  salto proxsalt) ))
         (when sel
           (setcar (nthcdr sel lconmar)
                   (1+ (nth sel lconmar)))
@@ -900,16 +900,18 @@ tabla entre initab y fintab."
         (setq expreg (concat expreg
                              (format "[^\\n\\t%s]\\{%d\\}%s"
                                      sep (- salto saltant) sepact))
-              saltant (+ salto (length sepact)) )
-        )
-      (setq expreg (concat expreg "\n"))
+              saltant (+ salto (length sepact)) ))
+      (setq expreg (concat expreg "\\n"))
+
       (goto-char ini)
       (when (looking-back expreg)
         (setq ini (match-beginning 0)))
+
       (goto-char fin)
       (while (looking-at expreg)
         (setq fin (match-end 0))
-        (goto-char fin))
+        (goto-char fin) )
+
       (list ini fin sep longr lposep lpostrun nil) )))
 
 ;; TODO: Habría que hacer alguna manera de probar de manera automática casos de tablas que debe poder reparar esta función.
