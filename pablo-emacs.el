@@ -834,6 +834,17 @@ tabla entre initab y fintab."
           (goto-char ini)
           (insert textocel) )))))
 
+(defun probar-regexp ()
+  (interactive)
+  (let* ((cualquierc "\\(.\\|\n\\)")
+         (columna1 (concat cualquierc "\\{128\\}|"))
+         (columna2 (concat cualquierc "\\{300\\}")) )
+    (if (re-search-forward (format
+                            "%1$s%1$s%1$s%1$s%2$s"
+                            columna1 columna2))
+        (message "si")
+      (message "no") )))
+
 (defun mssql-buscar-divisonv ()
   (let (ini ;; inicio de la tabla, hasta donde sabemos
         fin ;; fin de la tabla, hasta donde sabemos
@@ -855,8 +866,8 @@ tabla entre initab y fintab."
         sepact ;; separador actual
         )
     (when (re-search-backward
-           (concat "^[-\\n\\t]+\\(\\([^-\\n]\\)[-\\n\\t]+"
-                   "\\(\\2[-\\n\\t]+\\)*\\)?$"))
+           (concat "^[\n\t-]+\\(\\([^\n-]\\)[\n\t-]+"
+                   "\\(\\2[\n\t-]+\\)*\\)?$"))
       (setq ini (match-beginning 0)
             fin (match-end 0)
             sep (match-string-no-properties 2)
@@ -898,19 +909,19 @@ tabla entre initab y fintab."
                   (1+ (nth sel lconmar)))
           (setq sepact (nth sel lsep)))
         (setq expreg (concat expreg
-                             (format "[^\\n\\t%s]\\{%d\\}%s"
-                                     sep (- salto saltant) sepact))
+                             (format "\\(.\\|\n\\)\\{%d\\}%s"
+                                     (- salto saltant) sepact))
               saltant (+ salto (length sepact)) ))
-      (setq expreg (concat expreg "\\n"))
+      (setq expreg (concat expreg "\n"))
 
       (goto-char ini)
       (when (looking-back expreg)
         (setq ini (match-beginning 0)))
 
-      (goto-char fin)
+      (goto-char (1+ fin))
       (while (looking-at expreg)
         (setq fin (match-end 0))
-        (goto-char fin) )
+        (goto-char (1+ fin)) )
 
       (list ini fin sep longr lposep lpostrun nil) )))
 
