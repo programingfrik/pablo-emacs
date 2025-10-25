@@ -845,6 +845,15 @@ tabla entre initab y fintab."
         (message "si")
       (message "no") )))
 
+(defun mssql-listar-apariciones(sujeto inicio fin)
+  (let* (lpos post)
+    (goto-char inicio)
+    (setq lpos (list))
+    (while (setq post (search-forward sujeto fin 'end))
+      (setq lpos (append lpos
+                         (list (- (1- post) inicio)) )))
+    lpos ))
+
 (defun mssql-buscar-divisonv ()
   (let (ini ;; inicio de la tabla, hasta donde sabemos
         fin ;; fin de la tabla, hasta donde sabemos
@@ -852,9 +861,7 @@ tabla entre initab y fintab."
         longr ;; longitud del registro
         trunca ;; el registro está truncado o no
         lposep ;; lista de pocisiones de separadores
-        posept ;; posicion de separador temporal
         lpostrun ;; lista de posiciones de trunque
-        postrunt ;; posicion de trunque temporal
         llmarcas ;; lista de lista de marcas
         lconmar ;; lista de contadores de marcas
         proxsalt ;; proximo salto
@@ -876,18 +883,10 @@ tabla entre initab y fintab."
                     "\n\t" (match-string-no-properties 0) ))
 
       (when sep
-        (goto-char ini)
-        (setq lposep (list))
-        (while (setq posept (search-forward sep fin 'end))
-          (setq lposep (append lposep
-                               (list (- (1- posept) ini)) ))))
+        (setq lposep (mssql-listar-apariciones sep ini fin)) )
 
       (when trunca
-        (goto-char ini)
-        (setq lpostrun (list))
-        (while (setq postrunt (search-forward "\n\t" fin 'end))
-          (setq lpostrun (append postrunt
-                                 (list (- (1- postrunt) ini)) ))))
+        (setq lpostrun (mssql-listar-apariciones "\n\t" ini fin)) )
 
       (setcar lsep sep)
       (setq llmarcas (list lposep lpostrun)
@@ -918,10 +917,9 @@ tabla entre initab y fintab."
       (when (looking-back expreg)
         (setq ini (match-beginning 0)))
 
-      (goto-char (1+ fin))
-      (while (looking-at expreg)
-        (setq fin (match-end 0))
-        (goto-char (1+ fin)) )
+      (while (and (goto-char (1+ fin))
+                  (looking-at expreg))
+        (setq fin (match-end 0)) )
 
       (list ini fin sep longr lposep lpostrun nil) )))
 
