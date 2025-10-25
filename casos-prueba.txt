@@ -54,7 +54,7 @@ go
 select 1
 go
 1> 2> 3> 4>
-
+ 
 -
 1
 
@@ -84,10 +84,10 @@ mssql1                                                                          
 1> select @@servername servidor, DB_NAME() base_datos, SYSTEM_USER usuario, @@servicename servicio, @@version version
    go
 
- 3>
-servidor|base_datos|usuario|servicio   |version                                                                                                                                                                                                       
---------|----------|-------|-----------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-mssql1  |master    |sa     |MSSQLSERVER|Microsoft SQL Server 2022 (RTM-CU10) (KB5031778) - 16.0.4095.4 (X64) 	Oct 30 2023 16:12:44 	Copyright (C) 2022 Microsoft Corporation	Developer Edition (64-bit) on Linux (Ubuntu 22.04.3 LTS) <X64>
+ 3> 
+servidor|base_datos|usuario|servicio   |version                                                                                                                                                                                               
+--------|----------|-------|-----------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+mssql1  |master    |sa     |MSSQLSERVER|Microsoft SQL Server 2022 (RTM-CU10) (KB5031778) - 16.0.4095.4 (X64)   Oct 30 2023 16:12:44   Copyright (C) 2022 Microsoft Corporation  Developer Edition (64-bit) on Linux (Ubuntu 22.04.3 LTS) <X64>
 
 (1 rows affected)
 <cursor>
@@ -155,9 +155,9 @@ DBSERVER01                                                                      
 select @@servername servidor, DB_NAME() base_datos, SYSTEM_USER usuario, @@servicename servicio, @@version version
 go
 
-servidor  |base_datos|usuario    |servicio   |version                                                                                                                                                                                                                                     
-----------|----------|-----------|-----------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-DBSERVER01|candy_data|factappuser|MSSQLSERVER|Microsoft SQL Server 2022 (RTM-CU15) (KB5041321) - 16.0.4145.4 (X64) 	Sep 19 2024 08:25:04 	Copyright (C) 2022 Microsoft Corporation	Developer Edition (64-bit) on Windows Server 2019 Standard 10.0 <X64> (Build 17763: ) (Hypervisor)
+servidor  |base_datos|usuario    |servicio   |version                                                                                                                                                                                                                                   
+----------|----------|-----------|-----------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+DBSERVER01|candy_data|factappuser|MSSQLSERVER|Microsoft SQL Server 2022 (RTM-CU15) (KB5041321) - 16.0.4145.4 (X64)   Sep 19 2024 08:25:04   Copyright (C) 2022 Microsoft Corporation  Developer Edition (64-bit) on Windows Server 2019 Standard 10.0 <X64> (Build 17763: ) (Hypervisor)
 
 (1 rows affected)
 <cursor>
