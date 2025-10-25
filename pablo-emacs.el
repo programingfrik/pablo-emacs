@@ -846,7 +846,7 @@ tabla entre initab y fintab."
       (message "no") )))
 
 (defun mssql-listar-apariciones(sujeto inicio fin)
-  (let* (lpos post)
+  (let (lpos post)
     (goto-char inicio)
     (setq lpos (list))
     (while (setq post (search-forward sujeto fin 'end))
@@ -857,6 +857,7 @@ tabla entre initab y fintab."
 (defun mssql-buscar-divisonv ()
   (let (ini ;; inicio de la tabla, hasta donde sabemos
         fin ;; fin de la tabla, hasta donde sabemos
+        cab ;; true si tiene cabecera
         sep ;; el separador que se está usando
         longr ;; longitud del registro
         trunca ;; el registro está truncado o no
@@ -868,7 +869,7 @@ tabla entre initab y fintab."
         (saltant 0) ;; salto anterior
         sel ;; marca seleccionada
         (salto 0) ;; el salto que hace en una iteración
-        expreg ;; expresión regular general
+        expreg ;; expresión registro coincide con todos
         (lsep (list "" "\n\t")) ;; La lista de separadores
         sepact ;; separador actual
         )
@@ -882,12 +883,14 @@ tabla entre initab y fintab."
             trunca (string-search
                     "\n\t" (match-string-no-properties 0) ))
 
+      ;; De la division vertical toma las divisiones horizontales, el caracter separador y los puntos donde está truncada la división vertical.
       (when sep
         (setq lposep (mssql-listar-apariciones sep ini fin)) )
 
       (when trunca
         (setq lpostrun (mssql-listar-apariciones "\n\t" ini fin)) )
 
+      ;; Usando la información de las divisiones horizontales, el separador, y los trunques, arma un patrón en forma de una expresión regular.
       (setcar lsep sep)
       (setq llmarcas (list lposep lpostrun)
             lconmar (make-list (length llmarcas) 0))
@@ -899,29 +902,38 @@ tabla entre initab y fintab."
           (when (and (nth i llmarcas)
                      (setq proxsalt
                            (nth (nth i lconmar)
-                                (nth i llmarcas)))
-                     (< proxsalt salto))
+                                (nth i llmarcas) ))
+                     (< proxsalt salto) )
             (setq sel i
                   salto proxsalt) ))
         (when sel
           (setcar (nthcdr sel lconmar)
-                  (1+ (nth sel lconmar)))
-          (setq sepact (nth sel lsep)))
+                  (1+ (nth sel lconmar)) )
+          (setq sepact (nth sel lsep)) )
         (setq expreg (concat expreg
                              (format "\\(.\\|\n\\)\\{%d\\}%s"
-                                     (- salto saltant) sepact))
+                                     (- salto saltant) sepact) )
               saltant (+ salto (length sepact)) ))
       (setq expreg (concat expreg "\n"))
 
+      ;; Usa esa expresión para detectar tanto la cabecera como el cuerpo de la tabla.
       (goto-char ini)
       (when (looking-back expreg)
-        (setq ini (match-beginning 0)))
+        (setq ini (match-beginning 0)
+              cab 't ))
 
       (while (and (goto-char (1+ fin))
-                  (looking-at expreg))
+                  (looking-at expreg) )
         (setq fin (match-end 0)) )
 
-      (list ini fin sep longr lposep lpostrun nil) )))
+      ;; Ahora tienes el inicio y final de la tabla real
+      (list ini fin cab sep longr lposep lpostrun nil) )))
+
+(defun mssql-quitar-trunques (tabla)
+  (let (lpostrun)
+    (when (setq lpostrun (nth 6 tabla))
+
+   )))
 
 ;; TODO: Habría que hacer alguna manera de probar de manera automática casos de tablas que debe poder reparar esta función.
 ;; TODO: Algunas tablas muy grandes hacen que se vuelva un disparate la "reparación de la tabla".
@@ -946,25 +958,20 @@ TODO: Esta función podría hacer recortes a las columnas para adaptarlas a un a
   ;;(save-excursion
     (let (tabla)
 
-      ;; Busca hacia atras la division vertical entre la cabecera y el cuerpo. Tiene que haber por lo menos 2 lineas la división vertical y un registro, ambos con la misma longitud las mismas separaciones y los mismos trunques..
+      ;; Busca hacia atras la division vertical entre la cabecera y el cuerpo. Una tabla por pequeña que sea tiene que tener por lo menos 2 lineas la división vertical y un registro, ambos con la misma longitud las mismas separaciones y los mismos trunques..
       (setq tabla (mssql-buscar-divisonv))
       (message "%s" tabla)
-      ;; La variable tabla es una lista, el primer elemento es la pocision de inicio de la tabla, el segundo es la pocisión final, el tercero es el separador, el cuarto elemento es la longitud de un registro, la quinta cosa es una sublista con las posiciones de cada separador, elsexto elemento es una sublista, cada elemento de esa sublista es una pocisión donde el registro se trunca, el septimo elemento es una sublista con la información de las columnas.
+      ;; La variable tabla es una lista, el primer elemento es la pocision de inicio de la tabla, el segundo es la pocisión final, el tercero indica si tiene cabecera o no, el cuarto es el separador, el quinto elemento es la longitud de un registro, la sexta cosa es una sublista con las posiciones de cada separador, el séptimo elemento es una sublista, cada elemento de esa sublista es una pocisión donde el registro se trunca, el octavo elemento es una sublista con la información de las columnas.
 
-      ;; Por cada columna hay una sublista, el primer elemento es la alineacion, el segundo elemento es la cantidad de espacio sobrante del registro con más caracteres de esa columna, o sea lo que se puede recortar de esa columna sin recortarle ni un caracter a ningún registro en esa columna.
-
-
-      ;; De la division vertical toma las divisiones horizontales, el caracter separador y los puntos donde está truncada la división vertical.
-
-      ;; Usando la información de las divisiones horizontales y el separador arma un patrón en forma de una expresión regular.
-
-      ;; Usa esa expresión para detectar tanto la cabecera como el cuerpo de la tabla.
-
-      ;; Ahora tienes el inicio y final de la tabla real
+      ;; En el séptimo elemento por cada columna hay una sublista, el primer elemento  de cada una de esas sublistases la alineación, verdadero es alineado a la izquierda, falso a la derecha, el segundo elemento es la cantidad de espacio sobrante del registro con más caracteres de esa columna, o sea lo que se puede recortar de esa columna sin recortarle ni un caracter a ningún registro en esa columna.
 
       ;; Quitale las propiedades a todo el texto de la tabla
+      (set-text-properties (nth 0 tabla) (nth 1 tabla) nil)
 
-      ;; Quitale los trunques que tenga la tabla
+      ;; Elimina los trunques que tenga la tabla.
+      (setq tabla (mssql-quitar-trunques tabla))
+      
+      ;; Reemplaza todos los caracteres tab y fin de linea dentro de cada campo de la tabla por un espacio.
 
       ;; Revisa los espacios en blanco de cada columna, cuanto se puede recortar y de que lado.
 
