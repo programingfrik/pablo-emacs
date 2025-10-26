@@ -972,9 +972,40 @@ tabla entre initab y fintab."
   (replace-regexp-in-region
    "[\n\t]" " " (nth 0 tabla) (nth 1 tabla) ))
 
-(defun mssql-revisar-espacios (tabla)
+(defun mssql-revisar-espacios-m1 (tabla)
 
   )
+
+(defun mssql-revisar-espacios-m2 (inic finc inif finf)
+  (let (lespr cespt espizqt encflanco colt cole)
+
+    (while (not (encflanco))
+
+      )
+    ))
+
+
+(defun mssql-revisar-espacios-m3 (tabla)
+
+  )
+
+(defun mssql-revisar-espacios-cols (tabla)
+  (let ((ini (nth 0 tabla))
+        (fin (nth 1 tabla))
+        (cab (nth 2 tabla))
+        (longr (nth 4 tabla))
+        (lcolsep (flatten-tree (list 0 (copy-sequence (nth 5 tabla)) longr)))
+        inic finc inif finf lrec ultrec)
+
+    (dotimes (i (1- (length lcolsep)))
+      (setq inic (+ ini (nth i lcolsep))
+            finc (+ ini (nth (1+ i) lcolsep))
+            inif 0
+            finf (/ (- fin ini) longr) )
+      (setq ultrec (cons (mssql-revisar-espacios-m2 inic finc inif finf)))
+      (setcdr
+
+    ))
 
 (defun mssql-recortar-espacios (tabla)
 
@@ -1006,16 +1037,16 @@ TODO: Esta función podría hacer recortes a las columnas para adaptarlas a un a
       ;; Busca hacia atras la division vertical entre la cabecera y el cuerpo. Una tabla por pequeña que sea tiene que tener por lo menos 2 lineas la división vertical y un registro, ambos con la misma longitud las mismas separaciones y los mismos trunques..
       (setq tabla (mssql-buscar-divisonv))
       (message "%s" tabla)
-      ;; La variable tabla es una lista, el primer elemento es la pocision de inicio de la tabla, el segundo es la pocisión final, el tercero indica si tiene cabecera o no, el cuarto es el separador, el quinto elemento es la longitud de un registro, la sexta cosa es una sublista con las posiciones de cada separador, el séptimo elemento es una sublista, cada elemento de esa sublista es una pocisión donde el registro se trunca, el octavo elemento es una sublista con la información de las columnas.
+      ;; La variable tabla es una lista, el primer elemento es la pocision de inicio de la tabla, el segundo es la pocisión final, el tercero indica si tiene cabecera o no, el cuarto es el separador, el quinto elemento es la longitud de un registro, la sexta cosa es una sublista con las posiciones de cada separador, el séptimo elemento es una sublista, cada elemento de esa sublista es una pocisión donde el registro se trunca, el octavo elemento es una sublista con información de donde cortar los espacios de las columnas.
 
-      ;; En el séptimo elemento por cada columna hay una sublista, el primer elemento  de cada una de esas sublistases la alineación, verdadero es alineado a la izquierda, falso a la derecha, el segundo elemento es la cantidad de espacio sobrante del registro con más caracteres de esa columna, o sea lo que se puede recortar de esa columna sin recortarle ni un caracter a ningún registro en esa columna.
+      ;; En el octavo elemento por cada columna hay una sublista, el primer elemento de cada una de esas sublistas es el espacio que se puede recortar desde la izquierda, el segundo elemento lo que se puede recortar desde la derecha. Que se puede recortar significa que ninguna fila tiene texto en ese espacio.
 
       ;; Quitale las propiedades a todo el texto de la tabla
       (set-text-properties (nth 0 tabla) (nth 1 tabla) nil)
 
       ;; Elimina los trunques que tenga la tabla.
       (setq tabla (mssql-quitar-trunques tabla))
-      
+
       ;; Reemplaza todos los caracteres tab y fin de linea dentro de cada campo de la tabla por un espacio.
       (mssql-reemplazar-fines-tabs tabla)
 
