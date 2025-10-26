@@ -927,13 +927,58 @@ tabla entre initab y fintab."
         (setq fin (match-end 0)) )
 
       ;; Ahora tienes el inicio y final de la tabla real
+      ;;    0   1   2   3   4     5      6        7
       (list ini fin cab sep longr lposep lpostrun nil) )))
 
 (defun mssql-quitar-trunques (tabla)
-  (let (lpostrun)
+  (let (lpostrun ini fin longr canr)
     (when (setq lpostrun (nth 6 tabla))
+      (setq trun "\n\t"
+            ini (nth 0 tabla)
+            fin (nth 1 tabla)
+            longr (nth 4 tabla)
+            canr (/ (- fin ini) longr)
+            lposep (nth 5 tabla)
+            i fin)
 
-   )))
+      ;; Elimina todos los trunques de cada registros, de atras para alante sino se alteran las posiciones.
+      (while (> i ini)
+        (setq j (1- (length lpostrun)))
+        (while (>= j 0)
+          (goto-char (- i (- longr (nth j lpostrun))))
+          (delete-char (length trun) nil)
+          (setq j (1- j)) )
+        (setq i (- i longr)) )
+      (setq longr (- longr (* (length lpostrun) (length trun)))
+            fin (+ ini (* canr longr))
+            i 0
+            j 0 )
+
+      ;; Restale a las posiciones de los separadores la longitud de los trunques que le correspondan.
+      (while (< i (length lposep))
+        (when (> (nth i lposep) (nth j lpostrun))
+          (setq j (1+ j)) )
+        (setcar (nthcdr i lposep)
+                (- (nth i lposep) (* (length trun) j)) )
+        (setq i (1+ i)) )
+
+      ;; Pon en la lista  de información de la tabla los campos que cambiaron por la eliminación de los trunques.
+      (setcar (nthcdr 1 tabla) fin)
+      (setcar (nthcdr 4 tabla) longr)
+      (setcar (nthcdr 6 tabla) nil) )
+    tabla ))
+
+(defun mssql-reemplazar-fines-tabs (tabla)
+  (replace-regexp-in-region
+   "[\n\t]" " " (nth 0 tabla) (nth 1 tabla) ))
+
+(defun mssql-revisar-espacios (tabla)
+
+  )
+
+(defun mssql-recortar-espacios (tabla)
+
+  )
 
 ;; TODO: Habría que hacer alguna manera de probar de manera automática casos de tablas que debe poder reparar esta función.
 ;; TODO: Algunas tablas muy grandes hacen que se vuelva un disparate la "reparación de la tabla".
@@ -972,10 +1017,13 @@ TODO: Esta función podría hacer recortes a las columnas para adaptarlas a un a
       (setq tabla (mssql-quitar-trunques tabla))
       
       ;; Reemplaza todos los caracteres tab y fin de linea dentro de cada campo de la tabla por un espacio.
+      (mssql-reemplazar-fines-tabs tabla)
 
       ;; Revisa los espacios en blanco de cada columna, cuanto se puede recortar y de que lado.
+      (setq tabla (mssql-revisar-espacios tabla))
 
       ;; Haz el recorte de los espacio
+      (setq tabla (mssql-recortar-espacios tabla))
 
       ;; Listo!
 
