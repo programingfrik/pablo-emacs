@@ -1003,9 +1003,9 @@ tabla entre initab y fintab."
             inif 0
             finf (/ (- fin ini) longr) )
       (setq ultrec (cons (mssql-revisar-espacios-m2 inic finc inif finf)))
-      (setcdr
+      ;; (setcdr
 
-    ))
+    )))
 
 (defun mssql-recortar-espacios (tabla)
 
