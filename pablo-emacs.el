@@ -994,17 +994,21 @@ tabla entre initab y fintab."
         (fin (nth 1 tabla))
         (cab (nth 2 tabla))
         (longr (nth 4 tabla))
-        (lcolsep (flatten-tree (list 0 (copy-sequence (nth 5 tabla)) longr)))
-        inic finc inif finf lrec ultrec)
+        (lcolsep (copy-sequence (nth 5 tabla)))
+        lrec ultrec)
+
+    (setcdr (nthcdr (1- (length lcolsep))) (cons longr nil))
+    (setcar lcolsep 0)
+    (setq ultrec (nthcdr (1- (length lcolsep))))
 
     (dotimes (i (1- (length lcolsep)))
-      (setq inic (+ ini (nth i lcolsep))
-            finc (+ ini (nth (1+ i) lcolsep))
-            inif 0
-            finf (/ (- fin ini) longr) )
-      (setq ultrec (cons (mssql-revisar-espacios-m2 inic finc inif finf)))
-      ;; (setcdr
-
+      (setcdr ultrec (cons (mssql-revisar-espacios-m2
+                            (+ ini (nth i lcolsep))
+                            (+ ini (nth (1+ i) lcolsep))
+                            0
+                            (/ (- fin ini) longr) )
+                           nil))
+      (setq ultrec (cder ultrec))
     )))
 
 (defun mssql-recortar-espacios (tabla)
