@@ -847,74 +847,81 @@ tabla entre initab y fintab."
 
 (defun mssql-listar-apariciones(sujeto inicio fin)
   (let (lpos post)
-    (goto-char inicio)
-    (setq lpos (list))
-    (while (setq post (search-forward sujeto fin 'end))
-      (setq lpos (append lpos
-                         (list (- (1- post) inicio)) )))
+    (when sujeto
+      (goto-char inicio)
+      (setq lpos (list))
+      (while (setq post (search-forward sujeto fin 'end))
+        (setq lpos (append lpos
+                           (list (- (1- post) inicio)) ))))
     lpos ))
 
-(defun mssql-buscar-divisonv ()
-  (let (ini ;; inicio de la tabla, hasta donde sabemos
-        fin ;; fin de la tabla, hasta donde sabemos
-        cab ;; true si tiene cabecera
-        sep ;; el separador que se está usando
-        longr ;; longitud del registro
-        trunca ;; el registro está truncado o no
-        lposep ;; lista de pocisiones de separadores
-        lpostrun ;; lista de posiciones de trunque
-        llmarcas ;; lista de lista de marcas
-        lconmar ;; lista de contadores de marcas
+(defun mssql-expresion-registro (longr ;; longitud del registro
+                                 llmarcas  ;; lista de lista de marcas
+                                 lsep ;; La lista de separadores
+                                 )
+  (let ((lconmar (make-list (length llmarcas) 0)) ;; lista de contadores de marcas
         proxsalt ;; proximo salto
         (saltant 0) ;; salto anterior
         sel ;; marca seleccionada
         (salto 0) ;; el salto que hace en una iteración
         expreg ;; expresión registro coincide con todos
-        (lsep (list "" "\n\t")) ;; La lista de separadores
         sepact ;; separador actual
         )
+
+    ;; Usando la información de las divisiones horizontales, el separador, y los trunques, arma un patrón en forma de una expresión regular.
+    (while (< salto longr)
+      (setq salto longr
+            sel nil
+            sepact "")
+      (dotimes (i (length llmarcas))
+        (when (and (nth i llmarcas)
+                   (setq proxsalt
+                         (nth (nth i lconmar)
+                              (nth i llmarcas) ))
+                   (< proxsalt salto) )
+          (setq sel i
+                salto proxsalt) ))
+      (when sel
+        (setcar (nthcdr sel lconmar)
+                (1+ (nth sel lconmar)) )
+        (setq sepact (nth sel lsep)) )
+      (setq expreg (concat expreg
+                           (format "\\(.\\|\n\\)\\{%d\\}%s"
+                                   (- salto saltant) sepact) )
+            saltant (+ salto (length sepact)) ))
+    (concat expreg "\n") ))
+
+(defun mssql-buscar-divisonv ()
+  (let (ini ;; Inicio de la tabla, hasta donde sabemos.
+        fin ;; Fin de la tabla, hasta donde sabemos.
+        cab ;; true si tiene cabecera
+        longr ;; longitud del registro
+        llmarcas ;; lista de lista de marcas
+        lsep ;; La lista de separadores,
+             ;; el primero separa las columnas,
+             ;; el segundo los trunques.
+        )
     (when (re-search-backward
-           (concat "^[\n\t-]+\\(\\([^\n-]\\)[\n\t-]+"
-                   "\\(\\2[\n\t-]+\\)*\\)?$"))
+           (concat "^\\(\\(\n\t\\)\\|-\\)+"
+                   "\\(\\([^\n-]\\)\\(\\(\n\t\\)\\|-\\)+"
+                   "\\(\\4\\(\\(\n\t\\)\\|-\\)+\\)*\\)?$" ))
       (setq ini (match-beginning 0)
             fin (match-end 0)
-            sep (match-string-no-properties 2)
             longr (length (match-string-no-properties 0))
-            trunca (string-search
-                    "\n\t" (match-string-no-properties 0) ))
+            lsep (list (match-string-no-properties 4)
+                       (or (match-string-no-properties 2)
+                           (match-string-no-properties 6)
+                           (match-string-no-properties 9) )))
 
       ;; De la division vertical toma las divisiones horizontales, el caracter separador y los puntos donde está truncada la división vertical.
-      (when sep
-        (setq lposep (mssql-listar-apariciones sep ini fin)) )
+      (dotimes (i (length lsep))
+        (setq llmarcas (append
+                        llmarcas
+                        (cons (mssql-listar-apariciones
+                               (nth i lsep) ini fin)
+                              nil ))))
 
-      (when trunca
-        (setq lpostrun (mssql-listar-apariciones "\n\t" ini fin)) )
-
-      ;; Usando la información de las divisiones horizontales, el separador, y los trunques, arma un patrón en forma de una expresión regular.
-      (setcar lsep sep)
-      (setq llmarcas (list lposep lpostrun)
-            lconmar (make-list (length llmarcas) 0))
-      (while (< salto longr)
-        (setq salto longr
-              sel nil
-              sepact "")
-        (dotimes (i (length llmarcas))
-          (when (and (nth i llmarcas)
-                     (setq proxsalt
-                           (nth (nth i lconmar)
-                                (nth i llmarcas) ))
-                     (< proxsalt salto) )
-            (setq sel i
-                  salto proxsalt) ))
-        (when sel
-          (setcar (nthcdr sel lconmar)
-                  (1+ (nth sel lconmar)) )
-          (setq sepact (nth sel lsep)) )
-        (setq expreg (concat expreg
-                             (format "\\(.\\|\n\\)\\{%d\\}%s"
-                                     (- salto saltant) sepact) )
-              saltant (+ salto (length sepact)) ))
-      (setq expreg (concat expreg "\n"))
+      (setq expreg (mssql-expresion-registro longr llmarcas lsep))
 
       ;; Usa esa expresión para detectar tanto la cabecera como el cuerpo de la tabla.
       (goto-char ini)
@@ -927,8 +934,9 @@ tabla entre initab y fintab."
         (setq fin (match-end 0)) )
 
       ;; Ahora tienes el inicio y final de la tabla real
-      ;;    0   1   2   3   4     5      6        7
-      (list ini fin cab sep longr lposep lpostrun nil) )))
+
+      ;;            0   1   2   3   4      5 6            7
+      (append (list ini fin cab sep longr) llmarcas (cons nil nil)) )))
 
 (defun mssql-quitar-trunques (tabla)
   (let (lpostrun ini fin longr canr)
@@ -977,7 +985,7 @@ tabla entre initab y fintab."
   )
 
 (defun mssql-revisar-espacios-m2 (inic finc inif finf)
-  (let (lespr cespt espizqt encflanco colt cole)
+  (let (lespr cespt espizqt flancoiz flancode colt cole)
 
     (while (not (encflanco))
 
