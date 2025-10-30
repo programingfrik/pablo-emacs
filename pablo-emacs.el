@@ -935,8 +935,8 @@ tabla entre initab y fintab."
 
       ;; Ahora tienes el inicio y final de la tabla real
 
-      ;;            0   1   2   3   4      5 6            7
-      (append (list ini fin cab sep longr) llmarcas (cons nil nil)) )))
+      ;;            0   1   2   3            4      5 6            7
+      (append (list ini fin cab (nth 0 lsep) longr) llmarcas (cons nil nil)) )))
 
 (defun mssql-quitar-trunques (tabla)
   (let (lpostrun ini fin longr canr)
@@ -981,7 +981,7 @@ tabla entre initab y fintab."
    "[\n\t]" " " (nth 0 tabla) (nth 1 tabla) ))
 
 (defun mssql-revisar-espacios-m1 (ini fin longr inic finc inif finf)
-  (let ((espacio (list nil nil))
+  (let (espacio
         (minesp longr)
         (linea 0)
         longc textocel espini espfin
@@ -990,26 +990,26 @@ tabla entre initab y fintab."
   (while (and (< linea alto)
               (> minesp 0))
     ;; Toma el inicio de la división.
-    (setq inicel (+ (* linea ancho) (nth col divisiones) 1 initab)
+    (setq inicel (+ (* linea longr) inic ini)
           ;; Toma el final de la división.
-          fincel (+ (* linea ancho) (nth (1+ col) divisiones) initab)
+          fincel (+ (* linea longr) finc ini)
           ;; Toma la longitud de la celda.
-          lon (- fin ini)
+          lon (- fincel inicel)
           ;; Toma el texto de la celda.
-          textocel (buffer-substring-no-properties ini fin) )
-    ;; (message "ini %i fin %i lon %i textocel \"%s\"" ini fin lon textocel)
+          textocel (buffer-substring-no-properties inicel fincel) )
+    ;; (message "ini %i fin %i lon %i textocel \"%s\"" inicel fincel lon textocel)
     ;; si no es una celda llena de guiones
     (unless (string-match "^-+$" textocel)
       ;; Toma la cantidad de espacios al inicio y al final.
-      (string-match "^\\( *\\)[^ ]*\\( *\\)$" textocel)
+      (string-match "^\\( *\\)\\(\\b.*\\b\\)?\\( *\\)$" textocel)
       (setq espini (length (match-string 1))
             espfin (length (match-string 2))
             cantesp (+ espini espfin) )
       ;; (message "espini %i espfin %i cantesp %i" espini espfin cantesp)
-      (if (or (< cantesp minesp) (= linea 0))
-          (setq minesp cantesp) ))
+      (when (or (< cantesp minesp) (= linea 0))
+        (setq minesp cantesp) ))
     (setq linea (1+ linea)) )
-  espacio ))
+  (setq espacio (list espini espfin)) ))
 
 (defun mssql-revisar-espacios-m2 (inic finc inif finf)
   (let (lespr cespt espizqt flancoiz flancode colt cole)
@@ -1030,21 +1030,22 @@ tabla entre initab y fintab."
         (cab (nth 2 tabla))
         (longr (nth 4 tabla))
         (lcolsep (copy-sequence (nth 5 tabla)))
-        lrec ultrec)
+        (lrec (list)) ultrec)
 
-    (setcdr (nthcdr (1- (length lcolsep))) (cons longr nil))
+    (setcdr (nthcdr (1- (length lcolsep)) lcolsep) (cons longr nil))
     (setcar lcolsep 0)
-    (setq ultrec (nthcdr (1- (length lcolsep))))
+    (setq ultrec (nthcdr (1- (length lrec)) lrec))
 
     (dotimes (i (1- (length lcolsep)))
-      (setcdr ultrec (cons (mssql-revisar-espacios-m2
+      (setcdr ultrec (cons (mssql-revisar-espacios-m1
                             (+ ini (nth i lcolsep))      ;; inic = inicio columna
                             (+ ini (nth (1+ i) lcolsep)) ;; finc = fin columna
                             0                            ;; inif = inicio fila
                             (/ (- fin ini) longr) )      ;; finf = fin fila
                            nil))
-      (setq ultrec (cder ultrec))
-    )))
+      (setq ultrec (cdr ultrec)) )
+    (setcar (nthcdr 7 tabla) lrec)
+    tabla ))
 
 (defun mssql-recortar-espacios (tabla)
 
@@ -1074,30 +1075,30 @@ TODO: Esta función podría hacer recortes a las columnas para adaptarlas a un a
     (let (tabla)
 
       ;; Busca hacia atras la division vertical entre la cabecera y el cuerpo. Una tabla por pequeña que sea tiene que tener por lo menos 2 lineas la división vertical y un registro, ambos con la misma longitud las mismas separaciones y los mismos trunques..
-      (setq tabla (mssql-buscar-divisonv))
-      (message "%s" tabla)
-      ;; La variable tabla es una lista, el primer elemento es la pocision de inicio de la tabla, el segundo es la pocisión final, el tercero indica si tiene cabecera o no, el cuarto es el separador, el quinto elemento es la longitud de un registro, la sexta cosa es una sublista con las posiciones de cada separador, el séptimo elemento es una sublista, cada elemento de esa sublista es una pocisión donde el registro se trunca, el octavo elemento es una sublista con información de donde cortar los espacios de las columnas.
+      (when (setq tabla (mssql-buscar-divisonv))
+        (message "%s" tabla)
+        ;; La variable tabla es una lista, el primer elemento es la pocision de inicio de la tabla, el segundo es la pocisión final, el tercero indica si tiene cabecera o no, el cuarto es el separador, el quinto elemento es la longitud de un registro, la sexta cosa es una sublista con las posiciones de cada separador, el séptimo elemento es una sublista, cada elemento de esa sublista es una pocisión donde el registro se trunca, el octavo elemento es una sublista con información de donde cortar los espacios de las columnas.
 
-      ;; En el octavo elemento por cada columna hay una sublista, el primer elemento de cada una de esas sublistas es el espacio que se puede recortar desde la izquierda, el segundo elemento lo que se puede recortar desde la derecha. Que se puede recortar significa que ninguna fila tiene texto en ese espacio.
+        ;; En el octavo elemento por cada columna hay una sublista, el primer elemento de cada una de esas sublistas es el espacio que se puede recortar desde la izquierda, el segundo elemento lo que se puede recortar desde la derecha. Que se puede recortar significa que ninguna fila tiene texto en ese espacio.
 
-      ;; Quitale las propiedades a todo el texto de la tabla
-      (set-text-properties (nth 0 tabla) (nth 1 tabla) nil)
+        ;; Quitale las propiedades a todo el texto de la tabla
+        (set-text-properties (nth 0 tabla) (nth 1 tabla) nil)
 
-      ;; Elimina los trunques que tenga la tabla.
-      (setq tabla (mssql-quitar-trunques tabla))
+        ;; Elimina los trunques que tenga la tabla.
+        (setq tabla (mssql-quitar-trunques tabla))
 
-      ;; Reemplaza todos los caracteres tab y fin de linea dentro de cada campo de la tabla por un espacio.
-      (mssql-reemplazar-fines-tabs tabla)
+        ;; Reemplaza todos los caracteres tab y fin de linea dentro de cada campo de la tabla por un espacio.
+        (mssql-reemplazar-fines-tabs tabla)
 
-      ;; Revisa los espacios en blanco de cada columna, cuanto se puede recortar y de que lado.
-      (setq tabla (mssql-revisar-espacios tabla))
+        ;; Revisa los espacios en blanco de cada columna, cuanto se puede recortar y de que lado.
+        (setq tabla (mssql-revisar-espacios-cols tabla))
 
-      ;; Haz el recorte de los espacio
-      (setq tabla (mssql-recortar-espacios tabla))
+        ;; Haz el recorte de los espacio
+        (setq tabla (mssql-recortar-espacios tabla))
 
-      ;; Listo!
+        ;; Listo!
 
-      )
+      ))
     ;;)
 )
 
