@@ -980,9 +980,36 @@ tabla entre initab y fintab."
   (replace-regexp-in-region
    "[\n\t]" " " (nth 0 tabla) (nth 1 tabla) ))
 
-(defun mssql-revisar-espacios-m1 (tabla)
+(defun mssql-revisar-espacios-m1 (ini fin longr inic finc inif finf)
+  (let ((espacio (list nil nil))
+        (minesp longr)
+        (linea 0)
+        longc textocel espini espfin
+        (cantesp 0))
 
-  )
+  (while (and (< linea alto)
+              (> minesp 0))
+    ;; Toma el inicio de la división.
+    (setq inicel (+ (* linea ancho) (nth col divisiones) 1 initab)
+          ;; Toma el final de la división.
+          fincel (+ (* linea ancho) (nth (1+ col) divisiones) initab)
+          ;; Toma la longitud de la celda.
+          lon (- fin ini)
+          ;; Toma el texto de la celda.
+          textocel (buffer-substring-no-properties ini fin) )
+    ;; (message "ini %i fin %i lon %i textocel \"%s\"" ini fin lon textocel)
+    ;; si no es una celda llena de guiones
+    (unless (string-match "^-+$" textocel)
+      ;; Toma la cantidad de espacios al inicio y al final.
+      (string-match "^\\( *\\)[^ ]*\\( *\\)$" textocel)
+      (setq espini (length (match-string 1))
+            espfin (length (match-string 2))
+            cantesp (+ espini espfin) )
+      ;; (message "espini %i espfin %i cantesp %i" espini espfin cantesp)
+      (if (or (< cantesp minesp) (= linea 0))
+          (setq minesp cantesp) ))
+    (setq linea (1+ linea)) )
+  espacio ))
 
 (defun mssql-revisar-espacios-m2 (inic finc inif finf)
   (let (lespr cespt espizqt flancoiz flancode colt cole)
@@ -1011,10 +1038,10 @@ tabla entre initab y fintab."
 
     (dotimes (i (1- (length lcolsep)))
       (setcdr ultrec (cons (mssql-revisar-espacios-m2
-                            (+ ini (nth i lcolsep))
-                            (+ ini (nth (1+ i) lcolsep))
-                            0
-                            (/ (- fin ini) longr) )
+                            (+ ini (nth i lcolsep))      ;; inic = inicio columna
+                            (+ ini (nth (1+ i) lcolsep)) ;; finc = fin columna
+                            0                            ;; inif = inicio fila
+                            (/ (- fin ini) longr) )      ;; finf = fin fila
                            nil))
       (setq ultrec (cder ultrec))
     )))
