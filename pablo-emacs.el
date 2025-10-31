@@ -977,8 +977,16 @@ tabla entre initab y fintab."
     tabla ))
 
 (defun mssql-reemplazar-fines-tabs (tabla)
-  (replace-regexp-in-region
-   "[\n\t]" " " (nth 0 tabla) (nth 1 tabla) ))
+  (let ((ini (nth 0 tabla))
+        (fin (nth 1 tabla))
+        (longr (nth 4 tabla)) )
+    (replace-string-in-region
+     "\t" " " ini fin)
+    (goto-char ini)
+    (while (search-forward "\n" fin 'end)
+      (when (not (= (% (match-beginning 0) longr) 0))
+        (replace-match " ") ))
+    ))
 
 (defun mssql-revisar-espacios-m1 (ini fin longr inic finc inif finf)
   (let (espacio
