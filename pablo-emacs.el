@@ -1,4 +1,16 @@
 
+(defun escribir-fecha-hora ()
+  "Una función para escribir la fecha y hora acutal en el punto actual."
+  (interactive)
+  (let* ((m (decode-time (current-time) nil))
+         (h24 (nth 2 m))
+         (h12 (if (> h24 12) (- h24 12) h24))
+         (aop (if (>= h24 12) "P" "A")) )
+    (insert (format "%04d-%02d-%02d %02d:%02d %sM"
+                    (nth 5 m) (nth 4 m) (nth 3 m)
+                    h12 (nth 1 m) aop)) ))
+
+
 (defun deactivate-proxy (&optional put-back)
   "\"Hides\" the values of http_proxy and https_proxy environment variables.
 To hide the values of those variables this function puts them on temporal variables temp_http_proxy and temp_https_proxy. If the optional parameter, put-back, is given a non-nil value the values of the temp variables are put back in the http_proxy environment values. I created this function because curl calls to omnisharp block when they pass through cntlm proxy."
