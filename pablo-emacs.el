@@ -880,7 +880,9 @@ tabla entre initab y fintab."
         sepact ;; separador actual
         )
 
-    ;; Usando la información de las divisiones horizontales, el separador, y los trunques, arma un patrón en forma de una expresión regular.
+    ;; Usando la información de las divisiones horizontales, el
+    ;; separador, y los trunques, arma un patrón en forma de una
+    ;; expresión regular.
     (while (< salto longr)
       (setq salto longr
             sel nil
@@ -903,7 +905,7 @@ tabla entre initab y fintab."
             saltant (+ salto (length sepact)) ))
     (concat expreg "\n") ))
 
-(defun mssql-buscar-divisonv ()
+(defun mssql-buscar-divisionv ()
   (let (ini ;; Inicio de la tabla, hasta donde sabemos.
         fin ;; Fin de la tabla, hasta donde sabemos.
         cab ;; true si tiene cabecera
@@ -925,7 +927,9 @@ tabla entre initab y fintab."
                            (match-string-no-properties 6)
                            (match-string-no-properties 9) )))
 
-      ;; De la division vertical toma las divisiones horizontales, el caracter separador y los puntos donde está truncada la división vertical.
+      ;; De la division vertical toma las divisiones horizontales, el
+      ;; caracter separador y los puntos donde está truncada la
+      ;; división vertical.
       (dotimes (i (length lsep))
         (setq llmarcas (append
                         llmarcas
@@ -935,7 +939,8 @@ tabla entre initab y fintab."
 
       (setq expreg (mssql-expresion-registro longr llmarcas lsep))
 
-      ;; Usa esa expresión para detectar tanto la cabecera como el cuerpo de la tabla.
+      ;; Usa esa expresión para detectar tanto la cabecera como el
+      ;; cuerpo de la tabla.
       (goto-char ini)
       (when (looking-back expreg)
         (setq ini (match-beginning 0)
@@ -947,8 +952,10 @@ tabla entre initab y fintab."
 
       ;; Ahora tienes el inicio y final de la tabla real
 
-      ;;            0   1   2   3            4      5 6            7
-      (append (list ini fin cab (nth 0 lsep) longr) llmarcas (cons nil nil)) )))
+      ;;            0   1   2   3            4
+      (append (list ini fin cab (nth 0 lsep) longr)
+           ;; 5 6            7
+              llmarcas (cons nil nil)) )))
 
 (defun mssql-quitar-trunques (tabla)
   (let (lpostrun ini fin longr canr)
@@ -961,7 +968,8 @@ tabla entre initab y fintab."
             lposep (nth 5 tabla)
             i fin)
 
-      ;; Elimina todos los trunques de cada registros, de atras para alante sino se alteran las posiciones.
+      ;; Elimina todos los trunques de cada registros, de atras para
+      ;; alante sino se alteran las posiciones.
       (while (> i ini)
         (setq j (1- (length lpostrun)))
         (while (>= j 0)
@@ -974,7 +982,8 @@ tabla entre initab y fintab."
             i 0
             j 0 )
 
-      ;; Restale a las posiciones de los separadores la longitud de los trunques que le correspondan.
+      ;; Restale a las posiciones de los separadores la longitud de
+      ;; los trunques que le correspondan.
       (while (< i (length lposep))
         (when (> (nth i lposep) (nth j lpostrun))
           (setq j (1+ j)) )
@@ -1074,16 +1083,16 @@ tabla entre initab y fintab."
 ;; TODO: Habría que hacer alguna manera de probar de manera automática casos de tablas que debe poder reparar esta función.
 ;; TODO: Algunas tablas muy grandes hacen que se vuelva un disparate la "reparación de la tabla".
 ;; TODO: Cuando se está reparando la tabla el usuario puede ver el cursor moviendose, lo correcto fuera que el usuario solo viera el resultado de la reparación y quizas algún tipo de indicación de progreso.
-;; TODO: Quizas fuera más fácil hacer la reparación completa en memoria y solo hacer en el buffer la parte de capturar la tabla.
+;; TODO: Quizas fuera más fácil hacer la reparación completa en memoria y solo hacer en el buffer la parte de capturar la tabla y cuando se vuelve a poner en el buffer.
 ;; TODO: La región no se está usando realmente, no se está tomando en cuenta.
 (defun mssql-reformat-table (&optional start end)
-  "A function to repair a table output from osql on a sqli buffer.
+  "A function to repair a table output from osql or sqlcmd on a sqli buffer.
 
 Para que esta función trabaje se recomienda que se usen las
 siguientes opciones para osql (setq sql-ms-options (quote (\"-w\"
 \"300\" \"-s\" \"|\" \"-n\"))
 
-TODO: Algunos casos extremos de tablas muy grandes en las que sería genial tener la ayuda de esta función, no estan funcionando adecuadamente. El caso del query en eikon de la vista Vw_VinculacionDesvinculacionEikon no está funcionando adecuadamente, trae un campo varchar con tamaño como 9000 y hace que se rompa la función tratando de ponerla pequeña.
+TODO: Algunos casos extremos de tablas muy grandes en las que sería genial tener la ayuda de esta función, no estan funcionando adecuadamente.
 TODO: Esta función debería sustituir la función \"reparar-stored-procedure\".
 TODO: Esta función podría hacer recortes a las columnas para adaptarlas a un ancho de pantalla específico.
 "
@@ -1094,12 +1103,32 @@ TODO: Esta función podría hacer recortes a las columnas para adaptarlas a un a
   ;;(save-excursion
     (let (tabla)
 
-      ;; Busca hacia atras la division vertical entre la cabecera y el cuerpo. Una tabla por pequeña que sea tiene que tener por lo menos 2 lineas la división vertical y un registro, ambos con la misma longitud las mismas separaciones y los mismos trunques..
-      (when (setq tabla (mssql-buscar-divisonv))
+      ;; Busca hacia atras la division vertical entre la cabecera y el
+      ;; cuerpo. Una tabla por pequeña que sea tiene que tener por lo
+      ;; menos 2 lineas la división vertical y un registro, ambos con
+      ;; la misma longitud las mismas separaciones y los mismos
+      ;; trunques..
+      (when (setq tabla (mssql-buscar-divisionv))
         (message "%s" tabla)
-        ;; La variable tabla es una lista, el primer elemento es la pocision de inicio de la tabla, el segundo es la pocisión final, el tercero indica si tiene cabecera o no, el cuarto es el separador, el quinto elemento es la longitud de un registro, la sexta cosa es una sublista con las posiciones de cada separador, el séptimo elemento es una sublista, cada elemento de esa sublista es una pocisión donde el registro se trunca, el octavo elemento es una sublista con información de donde cortar los espacios de las columnas.
+        ;; La variable tabla es una lista
+        ;; 1. el primer elemento es la pocision de inicio de la tabla
+        ;; 2. el segundo es la pocisión final
+        ;; 3. el tercero indica si tiene cabecera o no
+        ;; 4. el cuarto es el separador
+        ;; 5. el quinto elemento es la longitud de un registro
+        ;; 6. la sexta cosa es una sublista con las posiciones de cada
+        ;;   separador
+        ;; 7. el séptimo elemento es una sublista, cada elemento de esa
+        ;;   sublista es una pocisión donde el registro se trunca
+        ;; 8. el octavo elemento es una sublista con información de
+        ;;   donde cortar los espacios de las columnas.
 
-        ;; En el octavo elemento por cada columna hay una sublista, el primer elemento de cada una de esas sublistas es el espacio que se puede recortar desde la izquierda, el segundo elemento lo que se puede recortar desde la derecha. Que se puede recortar significa que ninguna fila tiene texto en ese espacio.
+        ;; En el octavo elemento por cada columna hay una sublista, el
+        ;; primer elemento de cada una de esas sublistas es el espacio
+        ;; que se puede recortar desde la izquierda, el segundo
+        ;; elemento lo que se puede recortar desde la derecha. Que se
+        ;; puede recortar significa que ninguna fila tiene texto en
+        ;; ese espacio.
 
         ;; Quitale las propiedades a todo el texto de la tabla
         (set-text-properties (nth 0 tabla) (nth 1 tabla) nil)
@@ -1107,10 +1136,12 @@ TODO: Esta función podría hacer recortes a las columnas para adaptarlas a un a
         ;; Elimina los trunques que tenga la tabla.
         (setq tabla (mssql-quitar-trunques tabla))
 
-        ;; Reemplaza todos los caracteres tab y fin de linea dentro de cada campo de la tabla por un espacio.
+        ;; Reemplaza todos los caracteres tab y fin de linea dentro de
+        ;; cada campo de la tabla por un espacio.
         (mssql-reemplazar-fines-tabs tabla)
 
-        ;; Revisa los espacios en blanco de cada columna, cuanto se puede recortar y de que lado.
+        ;; Revisa los espacios en blanco de cada columna, cuanto se
+        ;; puede recortar y de que lado.
         (setq tabla (mssql-revisar-espacios-cols tabla))
 
         ;; Haz el recorte de los espacio
