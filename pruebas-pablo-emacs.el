@@ -139,8 +139,6 @@
     (message "Tomó %02d:%02d:%02d.%03d" horas minutos segundos milesimas) ))
 
 ;; TODO: Hacer que funcionen todos los casos.
-;; TODO: Agregar casos de tablas "grandes" que rompen la función de reparación de tablas.
-;; TODO: Hacer casos de reparaciones de stored procedures.
 (defun probar-casos-prueba (&optional n)
   "Una función para hacer las pruebas de casos-prueba.txt."
   (interactive "P")
