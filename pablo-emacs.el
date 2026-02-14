@@ -905,7 +905,8 @@ tabla entre initab y fintab."
             saltant (+ salto (length sepact)) ))
     (concat expreg "\n") ))
 
-(defun mssql-buscar-divisionv ()
+(defun mssql-buscar-tabla ()
+  "Busca y recoge la información inicial de una tabla mssql cli."
   (let (ini ;; Inicio de la tabla, hasta donde sabemos.
         fin ;; Fin de la tabla, hasta donde sabemos.
         cab ;; true si tiene cabecera
@@ -915,10 +916,17 @@ tabla entre initab y fintab."
              ;; el primero separa las columnas,
              ;; el segundo los trunques.
         )
+
+    ;; Busca hacia atras la division vertical entre la cabecera y el
+    ;; cuerpo. Una tabla por pequeña que sea tiene que tener por lo
+    ;; menos 2 lineas, la división vertical y un registro, ambos con
+    ;; la misma longitud las mismas separaciones y los mismos
+    ;; trunques..
     (when (re-search-backward
-           (concat "^\\(\\(\n\t\\)\\|-\\)+"
-                   "\\(\\([^\n-]\\)\\(\\(\n\t\\)\\|-\\)+"
-                   "\\(\\4\\(\\(\n\t\\)\\|-\\)+\\)*\\)?$" ))
+           (concat "^\\(\\(\n\t\\)\\|-\\)+"                  ;; Primera columna
+                   "\\(\\([^\n-]\\)\\(\\(\n\t\\)\\|-\\)+"    ;; Primer separador y segunda columna.
+                   "\\(\\4\\(\\(\n\t\\)\\|-\\)+\\)*\\)?$" )) ;; Segundo separador (haciendo referencia al primero),
+                                                             ;; tercera columna y n repeticiones subsiguientes del conjunto.
       (setq ini (match-beginning 0)
             fin (match-end 0)
             longr (length (match-string-no-properties 0))
@@ -937,20 +945,29 @@ tabla entre initab y fintab."
                                (nth i lsep) ini fin)
                               nil ))))
 
+      ;; Con toda la información de la tabla arma una expresión
+      ;; regular en la que todas las lineas que son registros deberían
+      ;; coincidir.
       (setq expreg (mssql-expresion-registro longr llmarcas lsep))
 
       ;; Usa esa expresión para detectar tanto la cabecera como el
       ;; cuerpo de la tabla.
+
+      ;; Primero la cabecera mirando hacia atras
       (goto-char ini)
       (when (looking-back expreg)
         (setq ini (match-beginning 0)
               cab 't ))
 
+      ;; Después el cuerpo.
       (while (and (goto-char (1+ fin))
                   (looking-at expreg) )
         (setq fin (match-end 0)) )
 
       ;; Ahora tienes el inicio y final de la tabla real
+
+      ;; Pon toda esa información de la tabla en una lista, esta lista
+      ;; es lo que vamos a retornar.
 
       ;;            0   1   2   3            4
       (append (list ini fin cab (nth 0 lsep) longr)
@@ -958,8 +975,20 @@ tabla entre initab y fintab."
               llmarcas (cons nil nil)) )))
 
 (defun mssql-quitar-trunques (tabla)
-  (let (lpostrun ini fin longr canr)
+  (let (lposep   ;; Lista de posiciones de separador
+        lpostrun ;; Lista de posiciones de trunque
+        ini      ;; Posicion de inicio de la tabla
+        fin      ;; Posición de final de la tabla
+        longr    ;; Longitud de un registro
+        canr     ;; Cantidad de registros
+        trun     ;; La cadena que hace el trunque.
+        i)       ;; indice para señalar la posición que se está
+                 ;; trabajando en cada iteración
+
+    ;; Si hay datos en la lista de posiciones de trunque
     (when (setq lpostrun (nth 6 tabla))
+
+      ;; Toma los valores iniciales de las variables
       (setq trun "\n\t"
             ini (nth 0 tabla)
             fin (nth 1 tabla)
@@ -968,8 +997,15 @@ tabla entre initab y fintab."
             lposep (nth 5 tabla)
             i fin)
 
-      ;; Elimina todos los trunques de cada registros, de atras para
-      ;; alante sino se alteran las posiciones.
+      ;; Elimina todos los trunques de cada registros. Se trabaja de
+      ;; atras para adelante porque según se vayan eliminando los
+      ;; trunques se van a ir alterando las posiciones. Si
+      ;; recorrieramos la tabla desde el inicio hasta el final habría
+      ;; que modificar las posiciones cada vez que se elimina un
+      ;; trunque. Haciendo las eliminaciones de atras hacia adelante
+      ;; no importa que se afecten las posiciones de atras porque ya
+      ;; fueron modificadas y las de adelante que todavía no se han
+      ;; tocado permanecen intactas.
       (while (> i ini)
         (setq j (1- (length lpostrun)))
         (while (>= j 0)
@@ -977,6 +1013,7 @@ tabla entre initab y fintab."
           (delete-char (length trun) nil)
           (setq j (1- j)) )
         (setq i (- i longr)) )
+
       (setq longr (- longr (* (length lpostrun) (length trun)))
             fin (+ ini (* canr longr))
             i 0
@@ -1080,21 +1117,20 @@ tabla entre initab y fintab."
 
   )
 
-;; TODO: Habría que hacer alguna manera de probar de manera automática casos de tablas que debe poder reparar esta función.
-;; TODO: Algunas tablas muy grandes hacen que se vuelva un disparate la "reparación de la tabla".
+;; TODO: Algunas tablas muy grandes hacen que se vuelva un disparate la "reparación de la tabla". Ver caso de prueba "Prueba tabla grande".
 ;; TODO: Cuando se está reparando la tabla el usuario puede ver el cursor moviendose, lo correcto fuera que el usuario solo viera el resultado de la reparación y quizas algún tipo de indicación de progreso.
 ;; TODO: Quizas fuera más fácil hacer la reparación completa en memoria y solo hacer en el buffer la parte de capturar la tabla y cuando se vuelve a poner en el buffer.
 ;; TODO: La región no se está usando realmente, no se está tomando en cuenta.
+;; TODO: Esta función debería sustituir la función \"reparar-stored-procedure\". Ver caso de prueba "Prueba fuente procedure".
+;; TODO: Esta función podría hacer recortes a las columnas para adaptarlas a un ancho de pantalla específico.
+;; TODO: ¿Existe la posibilidad que un buffer sqli llame de forma automática a la función de reformat cada vez que hace un query? investigar. Esta llamada automática, si se logra hacer de una forma confiable ahorraría el trabajo de tener que llamar la función de reformatear la tabla que cuando estoy trabajando en un buffer sqli hago casi siempre después de una consulta.
+;; TODO: A veces en algunas columnas de algunas tablas se usa el tipo de dato datetime para almacenar una fecha, la parte de la hora queda sin uso, o sea siempre mostrando 00:00:00.000. Sería bueno que en estos casos en que todos los valores de horas de una columna datetime estuvieran en 0, eliminar esos 0 que no aportan ninguna información. Ver en los casos de prueba la "Prueba tabla grande 2".
 (defun mssql-reformat-table (&optional start end)
-  "A function to repair a table output from osql or sqlcmd on a sqli buffer.
+  "Reformats text tables from mssql cli as thin as posible.
 
 Para que esta función trabaje se recomienda que se usen las
 siguientes opciones para osql (setq sql-ms-options (quote (\"-w\"
 \"300\" \"-s\" \"|\" \"-n\"))
-
-TODO: Algunos casos extremos de tablas muy grandes en las que sería genial tener la ayuda de esta función, no estan funcionando adecuadamente.
-TODO: Esta función debería sustituir la función \"reparar-stored-procedure\".
-TODO: Esta función podría hacer recortes a las columnas para adaptarlas a un ancho de pantalla específico.
 "
   (interactive
    (list
@@ -1103,12 +1139,7 @@ TODO: Esta función podría hacer recortes a las columnas para adaptarlas a un a
   ;;(save-excursion
     (let (tabla)
 
-      ;; Busca hacia atras la division vertical entre la cabecera y el
-      ;; cuerpo. Una tabla por pequeña que sea tiene que tener por lo
-      ;; menos 2 lineas la división vertical y un registro, ambos con
-      ;; la misma longitud las mismas separaciones y los mismos
-      ;; trunques..
-      (when (setq tabla (mssql-buscar-divisionv))
+      (when (setq tabla (mssql-buscar-tabla))
         (message "%s" tabla)
         ;; La variable tabla es una lista
         ;; 1. el primer elemento es la pocision de inicio de la tabla
