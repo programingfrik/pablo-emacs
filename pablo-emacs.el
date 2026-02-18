@@ -975,27 +975,29 @@ tabla entre initab y fintab."
               llmarcas (cons nil nil)) )))
 
 (defun mssql-quitar-trunques (tabla)
-  (let (lposep   ;; Lista de posiciones de separador
-        lpostrun ;; Lista de posiciones de trunque
-        ini      ;; Posicion de inicio de la tabla
-        fin      ;; Posición de final de la tabla
-        longr    ;; Longitud de un registro
-        canr     ;; Cantidad de registros
-        trun     ;; La cadena que hace el trunque.
-        i)       ;; indice para señalar la posición que se está
-                 ;; trabajando en cada iteración
+  "Quita los trunques de la tabla de texto."
+  (let (lposep         ;; Lista de posiciones de separador
+        lpostrun       ;; Lista de posiciones de trunque
+        ini            ;; Posicion de inicio de la tabla
+        fin            ;; Posición de final de la tabla
+        longr          ;; Longitud de un registro
+        canr           ;; Cantidad de registros
+        (trun "\n\t")  ;; La cadena que hace el trunque.
+        i              ;; indice para señalar el registro que se está
+                       ;; trabajando en cada iteración
+        j)             ;; Indice para señalar el trunque que se está
+                       ;; eliminando en cada iteración.
 
     ;; Si hay datos en la lista de posiciones de trunque
     (when (setq lpostrun (nth 6 tabla))
 
       ;; Toma los valores iniciales de las variables
-      (setq trun "\n\t"
-            ini (nth 0 tabla)
+      (setq ini (nth 0 tabla)
             fin (nth 1 tabla)
             longr (nth 4 tabla)
             canr (/ (- fin ini) longr)
             lposep (nth 5 tabla)
-            i fin)
+            i fin) ;; i comienza en la posición final del a tabla.
 
       ;; Elimina todos los trunques de cada registros. Se trabaja de
       ;; atras para adelante porque según se vayan eliminando los
@@ -1007,28 +1009,36 @@ tabla entre initab y fintab."
       ;; fueron modificadas y las de adelante que todavía no se han
       ;; tocado permanecen intactas.
       (while (> i ini)
-        (setq j (1- (length lpostrun)))
-        (while (>= j 0)
+        (setq j (1- (length lpostrun))) ;; j comienza en la última
+                                        ;; posicion de la lista de
+        (while (>= j 0)                 ;; posiciones de trunque.
+          ;; Mueve el cursor a la posición de ese trunque.
           (goto-char (- i (- longr (nth j lpostrun))))
-          (delete-char (length trun) nil)
-          (setq j (1- j)) )
-        (setq i (- i longr)) )
+          (delete-char (length trun) nil) ;; Elimina el trunque.
+          (setq j (1- j)) ) ;; Retrocede una posición en la lista.
+        (setq i (- i longr)) ) ;; Retrocede un registro.
 
+      ;; Modifica la longitud del registro eliminando los trunques.
       (setq longr (- longr (* (length lpostrun) (length trun)))
-            fin (+ ini (* canr longr))
-            i 0
+            fin (+ ini (* canr longr)) ;; Recalcula el final
+            i 0 ;; Para la siguiente operación i y j empiezan en 0.
             j 0 )
 
       ;; Restale a las posiciones de los separadores la longitud de
       ;; los trunques que le correspondan.
-      (while (< i (length lposep))
-        (when (> (nth i lposep) (nth j lpostrun))
-          (setq j (1+ j)) )
-        (setcar (nthcdr i lposep)
-                (- (nth i lposep) (* (length trun) j)) )
-        (setq i (1+ i)) )
 
-      ;; Pon en la lista  de información de la tabla los campos que cambiaron por la eliminación de los trunques.
+      ;; Restale a las posiciones de los separadores la cantidad de
+      ;; trunques que están por detras de ese separador.
+      (while (< i (length lposep)) ;; Mientras haya separadores
+        (while (and (< j (length lpostrun)) ;; Mientras haya trunques
+                    (> (nth i lposep) (nth j lpostrun)) ) ;; y el separador
+          (setq j (1+ j)) )                               ;; esté por delante
+        (setcar (nthcdr i lposep) ;; restale a la posición separador los trunques
+                (- (nth i lposep) (* (length trun) j)) )
+        (setq i (1+ i)) ) ;; pasa al siguiente separador
+
+      ;; Pon en la lista de información de la tabla los campos que
+      ;; cambiaron por la eliminación de los trunques.
       (setcar (nthcdr 1 tabla) fin)
       (setcar (nthcdr 4 tabla) longr)
       (setcar (nthcdr 6 tabla) nil) )
@@ -1047,6 +1057,7 @@ tabla entre initab y fintab."
     ))
 
 (defun mssql-revisar-espacios-m1 (ini fin longr inic finc inif finf)
+  "Revisa los espacios de una columna usando el método 1, recorriendo valor por valor usando una expresión regular."
   (let (espacio
         (minesp longr)
         (linea 0)
@@ -1055,14 +1066,11 @@ tabla entre initab y fintab."
 
   (while (and (< linea alto)
               (> minesp 0))
-    ;; Toma el inicio de la división.
-    (setq inicel (+ (* linea longr) inic ini)
-          ;; Toma el final de la división.
-          fincel (+ (* linea longr) finc ini)
-          ;; Toma la longitud de la celda.
-          lon (- fincel inicel)
-          ;; Toma el texto de la celda.
-          textocel (buffer-substring-no-properties inicel fincel) )
+
+    (setq inicel (+ (* linea longr) inic ini) ;; Toma el inicio de la división.
+          fincel (+ (* linea longr) finc ini) ;; Toma el final de la división.
+          lon (- fincel inicel)               ;; Toma la longitud de la celda.
+          textocel (buffer-substring-no-properties inicel fincel) ) ;; Toma el texto de la celda.
     ;; (message "ini %i fin %i lon %i textocel \"%s\"" inicel fincel lon textocel)
     ;; si no es una celda llena de guiones
     (unless (string-match "^-+$" textocel)
@@ -1078,6 +1086,7 @@ tabla entre initab y fintab."
   (setq espacio (list espini espfin)) ))
 
 (defun mssql-revisar-espacios-m2 (inic finc inif finf)
+  "Revisa los espacios de una columna usando el método 2, revisando las columnas de caracteres una a una para detenerse cuando encuentre texto que no esté en blanco."
   (let (lespr cespt espizqt flancoiz flancode colt cole)
 
     (while (not (encflanco))
@@ -1087,10 +1096,11 @@ tabla entre initab y fintab."
 
 
 (defun mssql-revisar-espacios-m3 (tabla)
-
+  "Revisa los espacios de una columna usando el método 3, tratando de hacer verificaciones de las columnas de caracteres de forma eficiente, dando brincos, tratando de adivinar, de forma que no tenga que verificar todas las columnas."
   )
 
 (defun mssql-revisar-espacios-cols (tabla)
+  "Va recorriendo las columnas y llamando a la función que revisa los espacios de cada columna."
   (let ((ini (nth 0 tabla))
         (fin (nth 1 tabla))
         (cab (nth 2 tabla))
@@ -1114,7 +1124,7 @@ tabla entre initab y fintab."
     tabla ))
 
 (defun mssql-recortar-espacios (tabla)
-
+  "Recorre la tabla columna por columna haciendo recortes de los espacios en blanco."
   )
 
 ;; TODO: Algunas tablas muy grandes hacen que se vuelva un disparate la "reparación de la tabla". Ver caso de prueba "Prueba tabla grande".
@@ -1125,6 +1135,7 @@ tabla entre initab y fintab."
 ;; TODO: Esta función podría hacer recortes a las columnas para adaptarlas a un ancho de pantalla específico.
 ;; TODO: ¿Existe la posibilidad que un buffer sqli llame de forma automática a la función de reformat cada vez que hace un query? investigar. Esta llamada automática, si se logra hacer de una forma confiable ahorraría el trabajo de tener que llamar la función de reformatear la tabla que cuando estoy trabajando en un buffer sqli hago casi siempre después de una consulta.
 ;; TODO: A veces en algunas columnas de algunas tablas se usa el tipo de dato datetime para almacenar una fecha, la parte de la hora queda sin uso, o sea siempre mostrando 00:00:00.000. Sería bueno que en estos casos en que todos los valores de horas de una columna datetime estuvieran en 0, eliminar esos 0 que no aportan ninguna información. Ver en los casos de prueba la "Prueba tabla grande 2".
+;; TODO: Cuando se reformatea una tabla, la columna de más a la derecha, una vez recortada no necesita conservar sus espacios en blanco a la derecha, no se necesitan.
 (defun mssql-reformat-table (&optional start end)
   "Reformats text tables from mssql cli as thin as posible.
 
