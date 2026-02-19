@@ -846,6 +846,8 @@ tabla entre initab y fintab."
           (goto-char ini)
           (insert textocel) )))))
 
+
+
 (defun probar-regexp ()
   (interactive)
   (let* ((cualquierc "\\(.\\|\n\\)")
@@ -857,7 +859,11 @@ tabla entre initab y fintab."
         (message "si")
       (message "no") )))
 
+
+
 (defun mssql-listar-apariciones(sujeto inicio fin)
+  "Hace una lista de las posiciones en las que aparece una cadena en una
+región."
   (let (lpos post)
     (when sujeto
       (goto-char inicio)
@@ -867,26 +873,36 @@ tabla entre initab y fintab."
                            (list (- (1- post) inicio)) ))))
     lpos ))
 
+
+
 (defun mssql-expresion-registro (longr ;; longitud del registro
                                  llmarcas  ;; lista de lista de marcas
                                  lsep ;; La lista de separadores
                                  )
+  "Arma una expresión regular, con la longitud del registros los
+separadores y los trunques, cada registro que forme parte de esta tabla
+va a coincidir con esa expresión y se va a encontrar justo después de la
+división, el cuerpo, o justo antes, la cabecera, si está."
   (let ((lconmar (make-list (length llmarcas) 0)) ;; lista de contadores de marcas
-        proxsalt ;; proximo salto
+        proxsalt    ;; proximo salto
         (saltant 0) ;; salto anterior
-        sel ;; marca seleccionada
-        (salto 0) ;; el salto que hace en una iteración
-        expreg ;; expresión registro coincide con todos
-        sepact ;; separador actual
-        )
+        sel         ;; marca seleccionada
+        (salto 0)   ;; el salto que hace en una iteración
+        expreg      ;; expresión registro coincide con todos
+        sepact )    ;; separador actual
 
-    ;; Usando la información de las divisiones horizontales, el
-    ;; separador, y los trunques, arma un patrón en forma de una
-    ;; expresión regular.
-    (while (< salto longr)
+    ;; Lo principal en esta parte es determinar, recorriendo el
+    ;; registro de inicio a fin que cantidad de caracteres de
+    ;; distancia hay a los siguientes separadores y los trunques (cada
+    ;; "salto") para saber que cantidad exacta de repeticiones hay que
+    ;; ponerle a cada sub-expresión regular que va a coincidir con una
+    ;; parte del texto de un registro. El siguiente algoritmo busca
+    ;; cual es la siguiente cosa y determina la distancia.
+    (while (< salto longr) ;; Cada iteración es un salto.
       (setq salto longr
             sel nil
             sepact "")
+      ;; Buscando cual de las listas tiene una cosa más cercana.
       (dotimes (i (length llmarcas))
         (when (and (nth i llmarcas)
                    (setq proxsalt
@@ -895,27 +911,35 @@ tabla entre initab y fintab."
                    (< proxsalt salto) )
           (setq sel i
                 salto proxsalt) ))
+      ;; Cuando la cosa está segura seleccionada incrementa el
+      ;; contador de esa lista y selecciona cual es el separador
+      ;; actual.
       (when sel
         (setcar (nthcdr sel lconmar)
                 (1+ (nth sel lconmar)) )
         (setq sepact (nth sel lsep)) )
+      ;; Finalmente agrega una sub-expresión regular que se va a
+      ;; repetir la cantidad exacta encontrada. También guarda el
+      ;; salto que acabamos de dar para poder calcular la diferencia
+      ;; en el próximo salto.
       (setq expreg (concat expreg
                            (format "\\(.\\|\n\\)\\{%d\\}%s"
                                    (- salto saltant) sepact) )
             saltant (+ salto (length sepact)) ))
     (concat expreg "\n") ))
 
+
+
 (defun mssql-buscar-tabla ()
   "Busca y recoge la información inicial de una tabla mssql cli."
-  (let (ini ;; Inicio de la tabla, hasta donde sabemos.
-        fin ;; Fin de la tabla, hasta donde sabemos.
-        cab ;; true si tiene cabecera
-        longr ;; longitud del registro
+  (let (ini      ;; Inicio de la tabla, hasta donde sabemos.
+        fin      ;; Fin de la tabla, hasta donde sabemos.
+        cab      ;; true si tiene cabecera
+        longr    ;; longitud del registro
         llmarcas ;; lista de lista de marcas
-        lsep ;; La lista de separadores,
-             ;; el primero separa las columnas,
-             ;; el segundo los trunques.
-        )
+        lsep )   ;; La lista de separadores,
+                 ;; el primero separa las columnas,
+                 ;; el segundo los trunques.
 
     ;; Busca hacia atras la division vertical entre la cabecera y el
     ;; cuerpo. Una tabla por pequeña que sea tiene que tener por lo
@@ -968,14 +992,17 @@ tabla entre initab y fintab."
 
       ;; Pon toda esa información de la tabla en una lista, esta lista
       ;; es lo que vamos a retornar.
-
       ;;            0   1   2   3            4
       (append (list ini fin cab (nth 0 lsep) longr)
-           ;; 5 6            7
+              ;; 5 6         7
               llmarcas (cons nil nil)) )))
 
+
+
 (defun mssql-quitar-trunques (tabla)
-  "Quita los trunques de la tabla de texto."
+  "Quita los trunques de la tabla de texto y corrige las posiciones de la
+información de la tabla para queden todas las posiciones señalando su
+sitio real."
   (let (lposep         ;; Lista de posiciones de separador
         lpostrun       ;; Lista de posiciones de trunque
         ini            ;; Posicion de inicio de la tabla
@@ -983,21 +1010,20 @@ tabla entre initab y fintab."
         longr          ;; Longitud de un registro
         canr           ;; Cantidad de registros
         (trun "\n\t")  ;; La cadena que hace el trunque.
-        i              ;; indice para señalar el registro que se está
+        i              ;; Indice para señalar el registro que se está
                        ;; trabajando en cada iteración
-        j)             ;; Indice para señalar el trunque que se está
+        j )            ;; Indice para señalar el trunque que se está
                        ;; eliminando en cada iteración.
 
     ;; Si hay datos en la lista de posiciones de trunque
     (when (setq lpostrun (nth 6 tabla))
-
       ;; Toma los valores iniciales de las variables
       (setq ini (nth 0 tabla)
             fin (nth 1 tabla)
             longr (nth 4 tabla)
             canr (/ (- fin ini) longr)
             lposep (nth 5 tabla)
-            i fin) ;; i comienza en la posición final del a tabla.
+            i fin ) ;; i comienza en la posición final del a tabla.
 
       ;; Elimina todos los trunques de cada registros. Se trabaja de
       ;; atras para adelante porque según se vayan eliminando los
@@ -1044,49 +1070,74 @@ tabla entre initab y fintab."
       (setcar (nthcdr 6 tabla) nil) )
     tabla ))
 
+
+
 (defun mssql-reemplazar-fines-tabs (tabla)
-  (let ((ini (nth 0 tabla))
-        (fin (nth 1 tabla))
-        (longr (nth 4 tabla)) )
-    (replace-string-in-region
-     "\t" " " ini fin)
+  "A veces ocurre que algunos valores de texto de algunos campos tienen
+fines de lineas y tabs para poder reformatear las tablas en las que
+estan esos campos hay que cambiar esos caracteres de fines de lineas y
+dtab por un caracter de espacio. Ver los casos de prueba Prueba reparar
+tabla descripción servidor y Prueba reparar tabla descripción servidor
+2."
+  (let ((ini (nth 0 tabla))     ;; inicio de la tabla
+        (fin (nth 1 tabla))     ;; final de la tabla
+        (longr (nth 4 tabla)) ) ;; longitud de un registro
+
+    (replace-string-in-region   ;; Reemplaza cada tab por un espacio
+     "\t" " " ini fin)          ;; en la región de la tabla.
+
+    ;; Con los caracteres de fines de linea es un poco más complicado
+    ;; porque hay que eliminar los caracteres que son parte del texto
+    ;; pero no los que separan un registro del siguiente.
     (goto-char ini)
     (while (search-forward "\n" fin 'end)
-      (when (not (= (% (match-beginning 0) longr) 0))
+      (when (not (= (% (- (match-beginning 0) ini) longr) 0))
+        ;; Reemplaza un caracter de fin de linea con un espacio
+        ;; siempre que este no se encuentre en una posición que sea
+        ;; múltiplo de la longitud del registro.
         (replace-match " ") ))
     ))
 
+
+
 (defun mssql-revisar-espacios-m1 (ini fin longr inic finc inif finf)
-  "Revisa los espacios de una columna usando el método 1, recorriendo valor por valor usando una expresión regular."
+  "Revisa los espacios de una columna usando el método 1, recorriendo valor
+por valor usando una expresión regular."
   (let (espacio
         (minesp longr)
         (linea 0)
         longc textocel espini espfin
         (cantesp 0))
 
-  (while (and (< linea alto)
-              (> minesp 0))
+    (while (and (< linea alto)
+                (> minesp 0))
+      (setq inicel (+ (* linea longr) inic ini) ;; Toma el inicio de la división.
+            fincel (+ (* linea longr) finc ini) ;; Toma el final de la división.
+            lon (- fincel inicel)               ;; Toma la longitud de la celda.
+            textocel (buffer-substring-no-properties inicel fincel) ) ;; Toma el texto de la celda.
 
-    (setq inicel (+ (* linea longr) inic ini) ;; Toma el inicio de la división.
-          fincel (+ (* linea longr) finc ini) ;; Toma el final de la división.
-          lon (- fincel inicel)               ;; Toma la longitud de la celda.
-          textocel (buffer-substring-no-properties inicel fincel) ) ;; Toma el texto de la celda.
-    ;; (message "ini %i fin %i lon %i textocel \"%s\"" inicel fincel lon textocel)
-    ;; si no es una celda llena de guiones
-    (unless (string-match "^-+$" textocel)
-      ;; Toma la cantidad de espacios al inicio y al final.
-      (string-match "^\\( *\\)\\(\\b.*\\b\\)?\\( *\\)$" textocel)
-      (setq espini (length (match-string 1))
-            espfin (length (match-string 2))
-            cantesp (+ espini espfin) )
-      ;; (message "espini %i espfin %i cantesp %i" espini espfin cantesp)
-      (when (or (< cantesp minesp) (= linea 0))
-        (setq minesp cantesp) ))
-    (setq linea (1+ linea)) )
-  (setq espacio (list espini espfin)) ))
+      ;; (message "ini %i fin %i lon %i textocel \"%s\"" inicel fincel lon textocel)
+
+      ;; si no es una celda llena de guiones
+      (unless (string-match "^-+$" textocel)
+        ;; Toma la cantidad de espacios al inicio y al final.
+        (string-match "^\\( *\\)\\(\\b.*\\b\\)?\\( *\\)$" textocel)
+        (setq espini (length (match-string 1))
+              espfin (length (match-string 2))
+              cantesp (+ espini espfin) )
+        ;; (message "espini %i espfin %i cantesp %i" espini espfin cantesp)
+        (when (or (< cantesp minesp) (= linea 0))
+          (setq minesp cantesp) ))
+
+      (setq linea (1+ linea)) )
+    (setq espacio (list espini espfin)) ))
+
+
 
 (defun mssql-revisar-espacios-m2 (inic finc inif finf)
-  "Revisa los espacios de una columna usando el método 2, revisando las columnas de caracteres una a una para detenerse cuando encuentre texto que no esté en blanco."
+  "Revisa los espacios de una columna usando el método 2, revisando las
+columnas de caracteres una a una para detenerse cuando encuentre texto
+que no esté en blanco."
   (let (lespr cespt espizqt flancoiz flancode colt cole)
 
     (while (not (encflanco))
@@ -1095,9 +1146,15 @@ tabla entre initab y fintab."
     ))
 
 
+
 (defun mssql-revisar-espacios-m3 (tabla)
-  "Revisa los espacios de una columna usando el método 3, tratando de hacer verificaciones de las columnas de caracteres de forma eficiente, dando brincos, tratando de adivinar, de forma que no tenga que verificar todas las columnas."
+  "Revisa los espacios de una columna usando el método 3, tratando de hacer
+verificaciones de las columnas de caracteres de forma eficiente, dando
+brincos, tratando de adivinar, de forma que no tenga que verificar todas
+las columnas."
   )
+
+
 
 (defun mssql-revisar-espacios-cols (tabla)
   "Va recorriendo las columnas y llamando a la función que revisa los espacios de cada columna."
@@ -1123,9 +1180,13 @@ tabla entre initab y fintab."
     (setcar (nthcdr 7 tabla) lrec)
     tabla ))
 
+
+
 (defun mssql-recortar-espacios (tabla)
   "Recorre la tabla columna por columna haciendo recortes de los espacios en blanco."
   )
+
+
 
 ;; TODO: Algunas tablas muy grandes hacen que se vuelva un disparate la "reparación de la tabla". Ver caso de prueba "Prueba tabla grande".
 ;; TODO: Cuando se está reparando la tabla el usuario puede ver el cursor moviendose, lo correcto fuera que el usuario solo viera el resultado de la reparación y quizas algún tipo de indicación de progreso.
@@ -1277,6 +1338,7 @@ siguientes opciones para osql (setq sql-ms-options (quote (\"-w\"
 
 
 ;; "\\([-+=*/]\\|[><]=?\\|<>\\)"
+
 
 
 (defun sql-ms-descripcion-a-create (&optional start end)
