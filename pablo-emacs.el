@@ -1157,16 +1157,22 @@ las columnas."
 
 
 (defun mssql-revisar-espacios-cols (tabla)
-  "Va recorriendo las columnas y llamando a la función que revisa los espacios de cada columna."
-  (let ((ini (nth 0 tabla))
-        (fin (nth 1 tabla))
-        (cab (nth 2 tabla))
-        (longr (nth 4 tabla))
-        (lcolsep (copy-sequence (nth 5 tabla)))
-        (lrec (list)) ultrec)
+  "Recorre las columnas llamando a la función que revisa los espacios de
+cada columna con las coordenadas de cada columna en cuestión."
+  (let ((ini (nth 0 tabla))   ;; Inicio de la tabla
+        (fin (nth 1 tabla))   ;; Final de la tabla
+        (cab (nth 2 tabla))   ;; Si tiene cabecera o no
+        (longr (nth 4 tabla)) ;; La longitud de cada registro.
+        (lcolsep (copy-sequence (nth 5 tabla))) ;; Lista de posiciones de los separadores.
+        (lrec (list))         ;; Lista de recortes
+        ultrec)               ;; Ultimo recorte
 
+    ;; Agrega un elemento más a la lista de separadores al final, como
+    ;; si hubiera un separador en la última posición del registro.
     (setcdr (nthcdr (1- (length lcolsep)) lcolsep) (cons longr nil))
+    ;; Agrega un elemento al inicio de la lista de separadores, en el 0.
     (setcar lcolsep 0)
+
     (setq ultrec (nthcdr (1- (length lrec)) lrec))
 
     (dotimes (i (1- (length lcolsep)))
@@ -1200,9 +1206,26 @@ las columnas."
 (defun mssql-reformat-table (&optional start end)
   "Reformats text tables from mssql cli as thin as posible.
 
-Para que esta función trabaje se recomienda que se usen las
-siguientes opciones para osql (setq sql-ms-options (quote (\"-w\"
-\"300\" \"-s\" \"|\" \"-n\"))
+Esta función es útil por sus efectos secundarios, no por sus resultados. Lo que usa como entrada es su posición en el buffer y el propio texto del buffer. Lo más normal cuando se llama esta función es que el cursor esté al final del buffer y esta función busca la última tabla hacia atras para reformatearla.
+
+La última tabla al final del buffer ya reformateada y reducida a su expresión mínima es el resultado de esta función. Esta función no devuelve ningún valor útil.
+
+El objetivo es ir de esto:
+nombre               |apellido               |sueldo       |nacimiento     |puesto          
+---------------------|-----------------------|-------------|---------------|----------------
+Carlos Alberto       |Marcos Zapata          |     30500.00|23-03-1983     |Maestro         
+Simona Bueno         |Jimenez Garcia         |      9000.00|05-12-1958     |Faenaria        
+Federico Angel       |Iglesias Acosta        |     65000.00|07-01-1994     |Director        
+
+A esto:
+nombre        |apellido       |sueldo  |nacimiento|puesto
+--------------|---------------|--------|----------|--------
+Carlos Alberto|Marcos Zapata  |30500.00|23-03-1983|Maestro
+Simona Bueno  |Jimenez Garcia | 9000.00|05-12-1958|Faenaria
+Federico Angel|Iglesias Acosta|65000.00|07-01-1994|Director
+
+Para que esta función trabaje se recomienda que se usen las siguientes opciones para osql (setq sql-ms-options (quote (\"-w\" \"300\" \"-s\" \"|\" \"-n\"))
+
 "
   (interactive
    (list
