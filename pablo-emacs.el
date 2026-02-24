@@ -1102,12 +1102,22 @@ tabla descripción servidor y Prueba reparar tabla descripción servidor
 
 
 
-(defun mssql-revisar-espacios-m1 (ini fin longr inic finc inif finf)
+(defun mssql-revisar-espacios-m1 (ini   ;; Inicio de la tabla
+                                  fin   ;; Fin de la tabla
+                                  longr ;; Longitud del registro
+                                  inic  ;; Inicio de la columna
+                                  finc  ;; Fin de la columna
+                                  cab)  ;; True si tiene cabecera
   "Revisa los espacios de una columna usando el método 1, recorriendo valor
 por valor usando una expresión regular."
-  (let ((meini longr) (mefin longr)
-        (linea 0)
-        longc textocel espini espfin
+  (let ((alto (/ (- fin ini) longr)) ;; el alto de la tabla, cuantas lineas hay
+        (meini longr) ;; mínimo espacio inicio
+        (mefin longr) ;; mínimo espacio fin
+        (linea 0)     ;; indice indica linea actual
+        longc
+        textocel      ;; El texto de la celda actual
+        espini        ;; Espacio al inicio
+        espfin        ;; Espacio al final
         (cantesp 0))
 
     (while (and (< linea alto)
