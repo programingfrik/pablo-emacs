@@ -1,6 +1,8 @@
 
 (defun escribir-fecha-hora ()
-  "Una función para escribir la fecha y hora acutal en el punto actual."
+  "Una función para escribir la fecha y hora acutal en el punto actual.
+
+La función escribe la fecha y la hora en formato aaaa-mm-dd hh:MM PP. Donde \"a\" son dígitos del año, \"m\" son dígitos del mes, \"d\" son dígitos del día, \"h\" son dígitos de la hora, \"M\" son dígitos de los minutos y \"P\" son dos letras que forma AM o PM según el caso. La hora se escribe en formato de 12 horas."
   (interactive)
   (let* ((m (decode-time (current-time) nil))
          (h24 (nth 2 m))
@@ -1103,8 +1105,7 @@ tabla descripción servidor y Prueba reparar tabla descripción servidor
 (defun mssql-revisar-espacios-m1 (ini fin longr inic finc inif finf)
   "Revisa los espacios de una columna usando el método 1, recorriendo valor
 por valor usando una expresión regular."
-  (let (espacio
-        (minesp longr)
+  (let ((meini longr) (mefin longr)
         (linea 0)
         longc textocel espini espfin
         (cantesp 0))
@@ -1113,7 +1114,6 @@ por valor usando una expresión regular."
                 (> minesp 0))
       (setq inicel (+ (* linea longr) inic ini) ;; Toma el inicio de la división.
             fincel (+ (* linea longr) finc ini) ;; Toma el final de la división.
-            lon (- fincel inicel)               ;; Toma la longitud de la celda.
             textocel (buffer-substring-no-properties inicel fincel) ) ;; Toma el texto de la celda.
 
       ;; (message "ini %i fin %i lon %i textocel \"%s\"" inicel fincel lon textocel)
@@ -1130,7 +1130,7 @@ por valor usando una expresión regular."
           (setq minesp cantesp) ))
 
       (setq linea (1+ linea)) )
-    (setq espacio (list espini espfin)) ))
+    (cons espini espfin) ))
 
 
 
@@ -1177,8 +1177,8 @@ cada columna con las coordenadas de cada columna en cuestión."
 
     (dotimes (i (1- (length lcolsep)))
       (setcdr ultrec (cons (mssql-revisar-espacios-m1
-                            (+ ini (nth i lcolsep))      ;; inic = inicio columna
-                            (+ ini (nth (1+ i) lcolsep)) ;; finc = fin columna
+                            (+ ini (nth i lcolsep))      ;; ini = inicio columna
+                            (+ ini (nth (1+ i) lcolsep)) ;; fin = fin columna
                             0                            ;; inif = inicio fila
                             (/ (- fin ini) longr) )      ;; finf = fin fila
                            nil))
@@ -1202,13 +1202,13 @@ cada columna con las coordenadas de cada columna en cuestión."
 ;; TODO: Esta función podría hacer recortes a las columnas para adaptarlas a un ancho de pantalla específico.
 ;; TODO: ¿Existe la posibilidad que un buffer sqli llame de forma automática a la función de reformat cada vez que hace un query? investigar. Esta llamada automática, si se logra hacer de una forma confiable ahorraría el trabajo de tener que llamar la función de reformatear la tabla que cuando estoy trabajando en un buffer sqli hago casi siempre después de una consulta.
 ;; TODO: A veces en algunas columnas de algunas tablas se usa el tipo de dato datetime para almacenar una fecha, la parte de la hora queda sin uso, o sea siempre mostrando 00:00:00.000. Sería bueno que en estos casos en que todos los valores de horas de una columna datetime estuvieran en 0, eliminar esos 0 que no aportan ninguna información. Ver en los casos de prueba la "Prueba tabla grande 2".
-;; TODO: Cuando se reformatea una tabla, la columna de más a la derecha, una vez recortada no necesita conservar sus espacios en blanco a la derecha, no se necesitan.
+;; TODO: Cuando se reformatea una tabla, la columna de más a la derecha, una vez recortada no necesita conservar sus espacios en blanco a la derecha.
 (defun mssql-reformat-table (&optional start end)
   "Reformats text tables from mssql cli as thin as posible.
 
-Esta función es útil por sus efectos secundarios, no por sus resultados. Lo que usa como entrada es su posición en el buffer y el propio texto del buffer. Lo más normal cuando se llama esta función es que el cursor esté al final del buffer y esta función busca la última tabla hacia atras para reformatearla.
+Esta función es útil por sus efectos secundarios, no por su resultado. Lo que usa como entrada es su posición en el buffer y el propio texto del buffer. Lo más normal cuando se llama esta función es que el cursor esté al final del buffer, por debajo de alguna tabla y esta función busca la última tabla hacia atras para reformatearla.
 
-La última tabla al final del buffer ya reformateada y reducida a su expresión mínima es el resultado de esta función. Esta función no devuelve ningún valor útil.
+El resultado de esta función es la última tabla al final del buffer ya reformateada y reducida a su expresión con el anchó más mínimo. Esta función no devuelve ningún valor útil.
 
 El objetivo es ir de esto:
 nombre               |apellido               |sueldo       |nacimiento     |puesto          
