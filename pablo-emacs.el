@@ -1102,54 +1102,79 @@ tabla descripción servidor y Prueba reparar tabla descripción servidor
 
 
 
-(defun mssql-revisar-espacios-m1 (ini   ;; Inicio de la tabla
-                                  fin   ;; Fin de la tabla
-                                  longr ;; Longitud del registro
-                                  inic  ;; Inicio de la columna
-                                  finc  ;; Fin de la columna
-                                  cab)  ;; True si tiene cabecera
-  "Revisa los espacios de una columna usando el método 1, recorriendo valor
-por valor usando una expresión regular para saber que espacio hay al inicio y al final del texto de la celda."
-  (let ((alto (/ (- fin ini) longr)) ;; el alto de la tabla, cuantas lineas hay
+(defun mssql-revisar-espacios-bloque-m1(init   ;; Inicio de la tabla
+                                        fint   ;; Fin de la tabla
+                                        longr  ;; Longitud del registro
+                                        inic   ;; Inicio de la columna
+                                        finc   ;; Fin de la columna
+                                        desde  ;; Desde que linea
+                                        hasta) ;; Hasta que linea
+  "Revisa un bloque de una columna. Si hay una cabecera esta se toma como
+un bloque, el cuerpo es otro bloque. Esta función recorre ese bloque
+buscando los espacios y tomando el menor de todo el bloque para el
+inicio y para el final."
+  (let ((linea desde) ;; indice indica linea actual
         (meini longr) ;; mínimo espacio inicio
         (mefin longr) ;; mínimo espacio fin
-        (linea 0)     ;; indice indica linea actual
-        longc
+        inicel        ;; inicio de la celda
+        fincel        ;; fin de la celda
         textocel      ;; El texto de la celda actual
         espini        ;; Espacio al inicio
-        espfin        ;; Espacio al final
-        expcelda "^\\( *\\)\\(\\b.*\\b\\)?\\( *\\)$") ;; expresión para localizar espacios
+        espfin)        ;; Espacio al final
 
-    (when cab (setq linea 1))
+    ;; Recorre todos los valores de la columna siempre que no
+    ;; encontremos un valor que cubra todo el ancho, en cuyo caso el
+    ;; mínimo espacio se va a 0 y no tiene sentido seguir buscando
+    ;; porque no se va a poder recortar nada sin dañar ese valor.
+    (while (and (< linea hasta) (or (> meini 0) (> mefin 0)))
 
-    (while (and (< linea alto)
-                (or (> meini 0) (> mefin 0)))
       (setq inicel (+ (* linea longr) inic ini) ;; Toma el inicio de la división.
             fincel (+ (* linea longr) finc ini) ;; Toma el final de la división.
             textocel (buffer-substring-no-properties inicel fincel) ) ;; Toma el texto de la celda.
 
       ;; (message "ini %i fin %i lon %i textocel \"%s\"" inicel fincel lon textocel)
 
-      ;; si no es una celda llena de guiones
-      (unless (string-match "^-+$" textocel)
-        ;; Toma la cantidad de espacios al inicio y al final.
-        (string-match expcelda textocel)
-        (setq espini (length (match-string 1))
-              espfin (length (match-string 3)) )
-        ;; (message "espini %i espfin %i cantesp %i" espini espfin cantesp)
-        (when (< espini meini)
-          (setq meini espini) )
-        (when (< espfin mefin)
-          (setq mefin espfin) ))
+      (string-match "^\\( *\\)\\(\\b.*\\b\\)?\\( *\\)$" textocel)
+      (setq espini (length (match-string 1))
+            espfin (length (match-string 3)) )
+      ;; (message "espini %i espfin %i cantesp %i" espini espfin cantesp)
+
+      (when (< espini meini) (setq meini espini))
+
+      (when (< espfin mefin) (setq mefin espfin))
 
       (setq linea (1+ linea)) )
+    (list meini mefin) ))
+
+
+
+(defun mssql-revisar-espacios-m1 (init  ;; Inicio de la tabla
+                                  fint  ;; Fin de la tabla
+                                  longr ;; Longitud del registro
+                                  inic  ;; Inicio de la columna
+                                  finc  ;; Fin de la columna
+                                  cab)  ;; True si tiene cabecera
+  "Revisa los espacios de una columna usando el método 1, recorriendo valor
+por valor usando una expresión regular para saber que espacio hay al
+inicio y al final del texto de la celda."
+  (let ((alto (/ (- fin ini) longr)) ;; el alto de la tabla, cuantas lineas hay
+        (inicue 1)
+        espcab
+        espcue)
 
     (when cab
-      (setq
+      (setq espcab (mssql-revisar-espacios-bloque-m1
+                    init fint longr inic finc 0 1)
+            inicue 2))
+
+    (setq espcue (mssql-revisar-espacios-bloque-m1
+                  init fint longr inic finc inicue alto))
+
+    (when (and cab (< (apply '+ espcab) (apply '+ espcue)))
 
       )
 
-    (cons meini mefin) ))
+    espcue))
 
 
 
