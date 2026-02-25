@@ -62,6 +62,34 @@ go
 <cursor>
 
 ======================================================================
+Prueba Comentarios
+(mssql-reformat-table)
+----prueba----
+select top 3 * from camaradas
+go
+1> 2> 3> 4>nombre               |apellido               |sueldo       |nacimiento     |puesto          
+---------------------|-----------------------|-------------|---------------|----------------
+Carlos Alberto       |Marcos Zapata          |     30500.00|23-03-1983     |Maestro         
+Simona Bueno         |Jimenez Garcia         |      9000.00|05-12-1958     |Faenaria        
+Federico Angel       |Iglesias Acosta        |     65000.00|07-01-1994     |Director        
+
+(3 rows affected)
+<cursor>
+
+----resultado----
+select top 3 * from camaradas
+go
+1> 2> 3> 4>
+nombre        |apellido       |sueldo  |nacimiento|puesto
+--------------|---------------|--------|----------|--------
+Carlos Alberto|Marcos Zapata  |30500.00|23-03-1983|Maestro
+Simona Bueno  |Jimenez Garcia | 9000.00|05-12-1958|Faenaria
+Federico Angel|Iglesias Acosta|65000.00|07-01-1994|Director
+
+(3 rows affected)
+<cursor>
+
+======================================================================
 Prueba reparar tabla descripción servidor
 (mssql-reformat-table)
 ----prueba----
