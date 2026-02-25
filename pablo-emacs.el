@@ -1065,8 +1065,8 @@ sitio real."
                 (- (nth i lposep) (* (length trun) j)) )
         (setq i (1+ i)) ) ;; pasa al siguiente separador
 
-      ;; Pon en la lista de información de la tabla los campos que
-      ;; cambiaron por la eliminación de los trunques.
+      ;; Pon de regreso en la lista de información de la tabla los
+      ;; campos que cambiaron por la eliminación de los trunques.
       (setcar (nthcdr 1 tabla) fin)
       (setcar (nthcdr 4 tabla) longr)
       (setcar (nthcdr 6 tabla) nil) )
@@ -1109,7 +1109,7 @@ tabla descripción servidor y Prueba reparar tabla descripción servidor
                                   finc  ;; Fin de la columna
                                   cab)  ;; True si tiene cabecera
   "Revisa los espacios de una columna usando el método 1, recorriendo valor
-por valor usando una expresión regular."
+por valor usando una expresión regular para saber que espacio hay al inicio y al final del texto de la celda."
   (let ((alto (/ (- fin ini) longr)) ;; el alto de la tabla, cuantas lineas hay
         (meini longr) ;; mínimo espacio inicio
         (mefin longr) ;; mínimo espacio fin
@@ -1118,10 +1118,12 @@ por valor usando una expresión regular."
         textocel      ;; El texto de la celda actual
         espini        ;; Espacio al inicio
         espfin        ;; Espacio al final
-        (cantesp 0))
+        expcelda "^\\( *\\)\\(\\b.*\\b\\)?\\( *\\)$") ;; expresión para localizar espacios
+
+    (when cab (setq linea 1))
 
     (while (and (< linea alto)
-                (> minesp 0))
+                (or (> meini 0) (> mefin 0)))
       (setq inicel (+ (* linea longr) inic ini) ;; Toma el inicio de la división.
             fincel (+ (* linea longr) finc ini) ;; Toma el final de la división.
             textocel (buffer-substring-no-properties inicel fincel) ) ;; Toma el texto de la celda.
@@ -1131,16 +1133,23 @@ por valor usando una expresión regular."
       ;; si no es una celda llena de guiones
       (unless (string-match "^-+$" textocel)
         ;; Toma la cantidad de espacios al inicio y al final.
-        (string-match "^\\( *\\)\\(\\b.*\\b\\)?\\( *\\)$" textocel)
+        (string-match expcelda textocel)
         (setq espini (length (match-string 1))
-              espfin (length (match-string 2))
-              cantesp (+ espini espfin) )
+              espfin (length (match-string 3)) )
         ;; (message "espini %i espfin %i cantesp %i" espini espfin cantesp)
-        (when (or (< cantesp minesp) (= linea 0))
-          (setq minesp cantesp) ))
+        (when (< espini meini)
+          (setq meini espini) )
+        (when (< espfin mefin)
+          (setq mefin espfin) ))
 
       (setq linea (1+ linea)) )
-    (cons espini espfin) ))
+
+    (when cab
+      (setq
+
+      )
+
+    (cons meini mefin) ))
 
 
 
@@ -1212,6 +1221,7 @@ cada columna con las coordenadas de cada columna en cuestión."
 ;; TODO: Esta función podría hacer recortes a las columnas para adaptarlas a un ancho de pantalla específico.
 ;; TODO: ¿Existe la posibilidad que un buffer sqli llame de forma automática a la función de reformat cada vez que hace un query? investigar. Esta llamada automática, si se logra hacer de una forma confiable ahorraría el trabajo de tener que llamar la función de reformatear la tabla que cuando estoy trabajando en un buffer sqli hago casi siempre después de una consulta.
 ;; TODO: A veces en algunas columnas de algunas tablas se usa el tipo de dato datetime para almacenar una fecha, la parte de la hora queda sin uso, o sea siempre mostrando 00:00:00.000. Sería bueno que en estos casos en que todos los valores de horas de una columna datetime estuvieran en 0, eliminar esos 0 que no aportan ninguna información. Ver en los casos de prueba la "Prueba tabla grande 2".
+;; TODO: En ese mismo sentido una columna con valores numéricos que muestra siempre 0 ceros a la derecha del punto que tampoco aportan información, se podría recortar para que no muestre estos ceros. Ver el caso de prueba Prueba tabla grande en la columna salario.
 ;; TODO: Cuando se reformatea una tabla, la columna de más a la derecha, una vez recortada no necesita conservar sus espacios en blanco a la derecha.
 (defun mssql-reformat-table (&optional start end)
   "Reformats text tables from mssql cli as thin as posible.
