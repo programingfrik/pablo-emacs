@@ -1120,7 +1120,7 @@ inicio y para el final."
         fincel        ;; fin de la celda
         textocel      ;; El texto de la celda actual
         espini        ;; Espacio al inicio
-        espfin)        ;; Espacio al final
+        espfin)       ;; Espacio al final
 
     ;; Recorre todos los valores de la columna siempre que no
     ;; encontremos un valor que cubra todo el ancho, en cuyo caso el
@@ -1160,7 +1160,8 @@ inicio y al final del texto de la celda."
   (let ((alto (/ (- fin ini) longr)) ;; el alto de la tabla, cuantas lineas hay
         (inicue 1)
         espcab
-        espcue)
+        espcue
+        sobra)
 
     (when cab
       (setq espcab (mssql-revisar-espacios-bloque-m1
@@ -1171,10 +1172,17 @@ inicio y al final del texto de la celda."
                   init fint longr inic finc inicue alto))
 
     (when (and cab (< (apply '+ espcab) (apply '+ espcue)))
+      (setq sobra (- (apply '+ espcue) (apply '+ espcab)))
 
-      )
-
-    espcue))
+      (if (> sobra (nth 1 espcue))
+          (progn
+            (setq sobra (- sobra (nth 1 espcue)))
+            (setcdr 0 espcue)
+            (setcar (- (car espcue) sobra) espcue))
+        (progn
+         (setcdr (- (nth 1 espcue) sobra) espcue)
+         (setq sobra 0) )))
+    espcue ))
 
 
 
