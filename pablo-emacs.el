@@ -1107,17 +1107,17 @@ tabla descripción servidor y Prueba reparar tabla descripción servidor
                                         longr  ;; Longitud del registro
                                         inic   ;; Inicio de la columna
                                         finc   ;; Fin de la columna
-                                        desde  ;; Desde que linea
-                                        hasta) ;; Hasta que linea
+                                        desde  ;; Linea inicial del bloque
+                                        hasta) ;; Linea limite bloque no incluida
   "Revisa un bloque de una columna. Si hay una cabecera esta se toma como
 un bloque, el cuerpo es otro bloque. Esta función recorre ese bloque
 buscando los espacios y tomando el menor de todo el bloque para el
-inicio y para el final."
-  (let ((linea desde) ;; indice indica linea actual
-        (meini longr) ;; mínimo espacio inicio
-        (mefin longr) ;; mínimo espacio fin
-        inicel        ;; inicio de la celda
-        fincel        ;; fin de la celda
+inicio y para el final, o sea izquierda y derecha de la columna."
+  (let ((linea desde) ;; Indice indica linea actual
+        (meini longr) ;; Mínimo espacio inicio
+        (mefin longr) ;; Mínimo espacio fin
+        inicel        ;; Inicio de la celda
+        fincel        ;; Fin de la celda
         textocel      ;; El texto de la celda actual
         espini        ;; Espacio al inicio
         espfin)       ;; Espacio al final
@@ -1158,30 +1158,43 @@ inicio y para el final."
 por valor usando una expresión regular para saber que espacio hay al
 inicio y al final del texto de la celda."
   (let ((alto (/ (- fin ini) longr)) ;; el alto de la tabla, cuantas lineas hay
-        (inicue 1)
-        espcab
-        espcue
-        sobra)
+        (inicue 1) ;; Linea en la que inicia el cuerpo
+        espcab     ;; Espacios de la cabecera
+        sumcab     ;; Sumatoria de la cabecera
+        espcue     ;; Espacios del cuerpo
+        sumcue     ;; Sumatoria del cuerpo
+        sobra)     ;; Diferencia entre el cuerpo y la cabecera
 
     (when cab
+      ;; Si hay una cabecera trae los espacios de la cabecera.
       (setq espcab (mssql-revisar-espacios-bloque-m1
                     init fint longr inic finc 0 1)
+            sumcab (apply '+ espcab)
             inicue 2))
 
+    ;; Trae los espacios mínimos del cuerpo.
     (setq espcue (mssql-revisar-espacios-bloque-m1
-                  init fint longr inic finc inicue alto))
+                  init fint longr inic finc inicue alto)
+          sumcue (apply '+ espcue))
 
-    (when (and cab (< (apply '+ espcab) (apply '+ espcue)))
-      (setq sobra (- (apply '+ espcue) (apply '+ espcab)))
+    ;; Si hay cabecera y los espacios no son 0 y los espacios de la
+    ;; cabecera son menores que los espacios del cuerpo hay que
+    ;; ajustarlos para poder recortar sin dañar la cabecera
+    (when (and cab (< 0 sumcab sumcue))
+      (setq sobra (- sumcue sumcab))
 
+      ;; Si la sobra es mayor que el espacio del final
       (if (> sobra (nth 1 espcue))
-          (progn
+          (progn ;; Que consuma ese espacio por completo
             (setq sobra (- sobra (nth 1 espcue)))
-            (setcdr 0 espcue)
-            (setcar (- (car espcue) sobra) espcue))
+            (setcar (nthcdr 1 espcue) 0)
+            ;; Luego consumir lo que haga falta del inicial
+            (setcar espcue (- (car espcue) sobra)))
         (progn
-         (setcdr (- (nth 1 espcue) sobra) espcue)
-         (setq sobra 0) )))
+          ;; sino que consuma lo que haga falta solo del espacio final
+          (setcar (nthcdr 1 espcue) (- (nth 1 espcue) sobra))
+          (setq sobra 0) )))
+    ;; Que retorne los espacios del cuerpo, modificados o no
     espcue ))
 
 
@@ -1211,8 +1224,8 @@ las columnas."
 (defun mssql-revisar-espacios-cols (tabla)
   "Recorre las columnas llamando a la función que revisa los espacios de
 cada columna con las coordenadas de cada columna en cuestión."
-  (let ((ini (nth 0 tabla))   ;; Inicio de la tabla
-        (fin (nth 1 tabla))   ;; Final de la tabla
+  (let ((init (nth 0 tabla))  ;; Inicio de la tabla
+        (fint (nth 1 tabla))  ;; Final de la tabla
         (cab (nth 2 tabla))   ;; Si tiene cabecera o no
         (longr (nth 4 tabla)) ;; La longitud de cada registro.
         (lcolsep (copy-sequence (nth 5 tabla))) ;; Lista de posiciones de los separadores.
@@ -1220,19 +1233,21 @@ cada columna con las coordenadas de cada columna en cuestión."
         ultrec)               ;; Ultimo recorte
 
     ;; Agrega un elemento más a la lista de separadores al final, como
-    ;; si hubiera un separador en la última posición del registro.
+    ;; si hubiera un separador en el caracter de la última posición
+    ;; del registro.
     (setcdr (nthcdr (1- (length lcolsep)) lcolsep) (cons longr nil))
-    ;; Agrega un elemento al inicio de la lista de separadores, en el 0.
-    (setcar lcolsep 0)
+
+    ;; Inserta un separador en el 0 de la lista de separadores.
+    (setq lcolsep (cons 0 lcolsep))
 
     (setq ultrec (nthcdr (1- (length lrec)) lrec))
 
     (dotimes (i (1- (length lcolsep)))
       (setcdr ultrec (cons (mssql-revisar-espacios-m1
-                            (+ ini (nth i lcolsep))      ;; ini = inicio columna
-                            (+ ini (nth (1+ i) lcolsep)) ;; fin = fin columna
-                            0                            ;; inif = inicio fila
-                            (/ (- fin ini) longr) )      ;; finf = fin fila
+                            (+ init (nth i lcolsep))      ;; ini = inicio columna
+                            (+ init (nth (1+ i) lcolsep)) ;; fin = fin columna
+                            0                             ;; inif = inicio fila
+                            (/ (- fint init) longr) )     ;; finf = fin fila
                            nil))
       (setq ultrec (cdr ultrec)) )
     (setcar (nthcdr 7 tabla) lrec)
