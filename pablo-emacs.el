@@ -1222,15 +1222,16 @@ las columnas."
 
 
 (defun mssql-revisar-espacios-cols (tabla)
-  "Recorre las columnas llamando a la función que revisa los espacios de
-cada columna con las coordenadas de cada columna en cuestión."
-  (let ((init (nth 0 tabla))  ;; Inicio de la tabla
-        (fint (nth 1 tabla))  ;; Final de la tabla
-        (cab (nth 2 tabla))   ;; Si tiene cabecera o no
-        (longr (nth 4 tabla)) ;; La longitud de cada registro.
-        (lcolsep (copy-sequence (nth 5 tabla))) ;; Lista de posiciones de los separadores.
-        (lrec (list))         ;; Lista de recortes
-        ultrec)               ;; Ultimo recorte
+  "Recorre las columnas llamando a la función que revisa los
+espacios de columna una a la vez."
+  (let* ((init (nth 0 tabla))  ;; Inicio de la tabla
+         (fint (nth 1 tabla))  ;; Final de la tabla
+         (cab (nth 2 tabla))   ;; Si tiene cabecera o no
+         (longr (nth 4 tabla)) ;; La longitud de cada registro.
+         (lcolsep (copy-sequence (nth 5 tabla))) ;; Lista de posiciones de los separadores.
+         (lrec (cons nil nil)) ;; Lista de recortes
+         (ultrec lrec)         ;; Ultimo recorte
+         (penrec ultrec))      ;; Penultimo recorte
 
     ;; Agrega un elemento más a la lista de separadores al final, como
     ;; si hubiera un separador en el caracter de la última posición
@@ -1240,18 +1241,15 @@ cada columna con las coordenadas de cada columna en cuestión."
     ;; Inserta un separador en el 0 de la lista de separadores.
     (setq lcolsep (cons 0 lcolsep))
 
-    (setq ultrec (nthcdr (1- (length lrec)) lrec))
-
     (dotimes (i (1- (length lcolsep)))
-      (setcdr ultrec (cons (mssql-revisar-espacios-m1
-                            (+ init (nth i lcolsep))      ;; ini = inicio columna
-                            (+ init (nth (1+ i) lcolsep)) ;; fin = fin columna
-                            0                             ;; inif = inicio fila
-                            (/ (- fint init) longr) )     ;; finf = fin fila
-                           nil))
-      (setq ultrec (cdr ultrec)) )
-    (setcar (nthcdr 7 tabla) lrec)
-    tabla ))
+      (setcar ultrec (mssql-revisar-espacios-m1
+                      init fint longr (nth i lcolsep) (nth (1+ i) lcolsep) cab)
+              (setq penrec ultrec)
+              (setcdr ultrec (cons nil nil))
+              (setq ultrec (cdr ultrec)) )
+      (setq penrec nil)
+      (setcar (nthcdr 7 tabla) lrec)
+      tabla ))
 
 
 
