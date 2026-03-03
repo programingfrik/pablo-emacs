@@ -1230,26 +1230,33 @@ espacios de columna una a la vez."
          (longr (nth 4 tabla)) ;; La longitud de cada registro.
          (lcolsep (copy-sequence (nth 5 tabla))) ;; Lista de posiciones de los separadores.
          (lrec (cons nil nil)) ;; Lista de recortes
-         (ultrec lrec)         ;; Ultimo recorte
-         (penrec ultrec))      ;; Penultimo recorte
+         (ultrec lrec)         ;; Último recorte
+         (penrec ultrec))      ;; Penúltimo recorte
 
     ;; Agrega un elemento más a la lista de separadores al final, como
     ;; si hubiera un separador en el caracter de la última posición
     ;; del registro.
     (setcdr (nthcdr (1- (length lcolsep)) lcolsep) (cons longr nil))
 
-    ;; Inserta un separador en el 0 de la lista de separadores.
+    ;; Inserta un separador en la pocisión 0 del registro en el 0 de
+    ;; la lista de separadores.
     (setq lcolsep (cons 0 lcolsep))
 
-    (dotimes (i (1- (length lcolsep)))
-      (setcar ultrec (mssql-revisar-espacios-m1
-                      init fint longr (nth i lcolsep) (nth (1+ i) lcolsep) cab)
-              (setq penrec ultrec)
-              (setcdr ultrec (cons nil nil))
-              (setq ultrec (cdr ultrec)) )
-      (setq penrec nil)
-      (setcar (nthcdr 7 tabla) lrec)
-      tabla ))
+    (dotimes (i (1- (length lcolsep))) ;; Recorre los separadores - 1
+      (setcar ultrec (mssql-revisar-espacios-m1 ;; Revisa los espacios
+                      init fint longr (nth i lcolsep)
+                      (nth (1+ i) lcolsep) cab ))
+      (setq penrec ultrec) ;; Apunta el penúltimo al último
+      (setcdr ultrec (cons nil nil)) ;; Agrega un nuevo cons
+      (setq ultrec (cdr ultrec)) ) ;; Apunta el último al
+                                   ;; nuevo último cons
+    (setcdr penrec nil) ;; Ahora que ya no se necesita elimina el
+                        ;; último eslabon, haciendo penúltimo apuntar
+                        ;; a nil.
+    (setcar (nthcdr 7 tabla) lrec) ;; Pon la lista de los recortes en
+                                   ;; el item 7 de la lista de
+                                   ;; información de la tabla
+    tabla )) ;; Listo retorna la misma tabla recibida
 
 
 
