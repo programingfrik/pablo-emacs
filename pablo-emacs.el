@@ -1194,7 +1194,7 @@ inicio y al final del texto de la celda."
           ;; sino que consuma lo que haga falta solo del espacio final
           (setcar (nthcdr 1 espcue) (- (nth 1 espcue) sobra))
           (setq sobra 0) )))
-    ;; Que retorne los espacios del cuerpo, modificados o no
+    ;; Retorna la lista con los 2 espacios del cuerpo, modificados o no
     espcue ))
 
 
@@ -1259,9 +1259,25 @@ espacios de columna una a la vez."
     tabla )) ;; Listo retorna la misma tabla recibida
 
 
+(defun mssql-recortar-espacios-m1 ()
+  "Recorta los espacios de la columna usando una expresión regular. Haciendo un replace."
+  )
+
+(defun mssql-recortar-espacios-m2 ()
+  "Recorta los espacios de la columna usando las coordenadas del texto para ir y borrarlos."
+  )
+
+(defun mssql-recortar-espacios-m3 ()
+  "Recorta los espacios de la columna usando las funciones de rectangulo para quitarlos todos de un solo golpe."
+  )
+
 
 (defun mssql-recortar-espacios (tabla)
   "Recorre la tabla columna por columna haciendo recortes de los espacios en blanco."
+
+  ;; Recorre las columnas
+
+  ;; Si tiene cabecera hay que usar un método especial para la cabecera.
   )
 
 
@@ -1304,7 +1320,7 @@ Para que esta función trabaje se recomienda que se usen las siguientes opciones
    (list
     (if (use-region-p) (region-beginning))
     (if (use-region-p) (region-end)) ))
-  ;;(save-excursion
+  (save-excursion
     (let (tabla)
 
       (when (setq tabla (mssql-buscar-tabla))
@@ -1346,10 +1362,8 @@ Para que esta función trabaje se recomienda que se usen las siguientes opciones
         ;; Haz el recorte de los espacio
         (setq tabla (mssql-recortar-espacios tabla))
 
-        ;; Listo!
-
-      ))
-    ;;)
+        )) ;; Listo!
+    )
 )
 
 
