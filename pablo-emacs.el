@@ -1229,9 +1229,9 @@ espacios de columna una a la vez."
          (cab (nth 2 tabla))   ;; Si tiene cabecera o no
          (longr (nth 4 tabla)) ;; La longitud de cada registro.
          (lcolsep (copy-sequence (nth 5 tabla))) ;; Lista de posiciones de los separadores.
-         (lrec (cons nil nil)) ;; Lista de recortes
-         (ultrec lrec)         ;; Último recorte
-         (penrec ultrec))      ;; Penúltimo recorte
+         (lrec (cons nil nil)) ;; Lista de recortes inicia con un eslabón
+         (ultrec lrec)         ;; Último recorte último eslabón
+         penrec)               ;; Penúltimo recorte
 
     ;; Agrega un elemento más a la lista de separadores al final, como
     ;; si hubiera un separador en el caracter de la última posición
@@ -1251,8 +1251,8 @@ espacios de columna una a la vez."
       (setq ultrec (cdr ultrec)) ) ;; Apunta el último al
                                    ;; nuevo último cons
     (setcdr penrec nil) ;; Ahora que ya no se necesita elimina el
-                        ;; último eslabon, haciendo penúltimo apuntar
-                        ;; a nil.
+                        ;; último eslabon, haciendo al penúltimo
+                        ;; apuntar a nil.
     (setcar (nthcdr 7 tabla) lrec) ;; Pon la lista de los recortes en
                                    ;; el item 7 de la lista de
                                    ;; información de la tabla
