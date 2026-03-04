@@ -1274,11 +1274,21 @@ espacios de columna una a la vez."
 
 (defun mssql-recortar-espacios (tabla)
   "Recorre la tabla columna por columna haciendo recortes de los espacios en blanco."
+  (let ((init (nth 0 tabla))
+        (fint (nth 1 tabla))
+        (cab (nth 2 tabla))
+        (longr (nth 4 tabla))
+        (lcolsep (copy-sequence (nth 5 tabla))))
+
+    (setcdr (nthcdr (1- (length lcolsep)) lcolsep) (cons longr nil))
+
+    (setq lcolsep (cons 0 lcolsep))
+        
 
   ;; Recorre las columnas
 
   ;; Si tiene cabecera hay que usar un método especial para la cabecera.
-  )
+  ) )
 
 
 
