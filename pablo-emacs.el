@@ -1227,8 +1227,9 @@ espacios de columna una a la vez."
   (let* ((init (nth 0 tabla))  ;; Inicio de la tabla
          (fint (nth 1 tabla))  ;; Final de la tabla
          (cab (nth 2 tabla))   ;; Si tiene cabecera o no
-         (longr (nth 4 tabla)) ;; La longitud de cada registro.
-         (lcolsep (copy-sequence (nth 5 tabla))) ;; Lista de posiciones de los separadores.
+         (longr (nth 4 tabla)) ;; La longitud de cada registro
+         (lcolsep (copy-sequence (nth 5 tabla))) ;; Lista de posiciones de los separadores
+         (i 0)                 ;; Indice para recorrer las columnas
          (lrec (cons nil nil)) ;; Lista de recortes inicia con un eslabón
          (ultrec lrec)         ;; Último recorte último eslabón
          penrec)               ;; Penúltimo recorte
@@ -1278,15 +1279,21 @@ espacios de columna una a la vez."
         (fint (nth 1 tabla))
         (cab (nth 2 tabla))
         (longr (nth 4 tabla))
-        (lcolsep (copy-sequence (nth 5 tabla))))
+        (lcolsep (copy-sequence (nth 5 tabla)))
+        i )
 
     (setcdr (nthcdr (1- (length lcolsep)) lcolsep) (cons longr nil))
 
-    (setq lcolsep (cons 0 lcolsep))
-        
+    (setq lcolsep (cons 0 lcolsep)
+          i (- (length lcolsep) 2))
 
-  ;; Recorre las columnas
+    ;; Recorre las columnas en orden inverso recortando los espacios.
+    (while (>= i 0)
+      (mssql-recortar-espacios-m1
+       init fint longr (nth i lcolsep) (nth (1+ i) lcolsep) cab)
 
+      (setq i (1- i))
+      )
   ;; Si tiene cabecera hay que usar un método especial para la cabecera.
   ) )
 
