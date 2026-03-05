@@ -1157,7 +1157,7 @@ inicio y para el final, o sea izquierda y derecha de la columna."
   "Revisa los espacios de una columna usando el método 1, recorriendo valor
 por valor usando una expresión regular para saber que espacio hay al
 inicio y al final del texto de la celda."
-  (let ((alto (/ (- fin ini) longr)) ;; el alto de la tabla, cuantas lineas hay
+  (let ((alto (/ (- fint init) longr)) ;; el alto de la tabla, cuantas lineas hay
         (inicue 1) ;; Linea en la que inicia el cuerpo
         espcab     ;; Espacios de la cabecera
         sumcab     ;; Sumatoria de la cabecera
@@ -1260,38 +1260,68 @@ espacios de columna una a la vez."
     tabla )) ;; Listo retorna la misma tabla recibida
 
 
-(defun mssql-recortar-espacios-m1 ()
+
+(defun mssql-recortar-espacios-m1 (init fint longr inic finc espini espfin desde hasta)
   "Recorta los espacios de la columna usando una expresión regular. Haciendo un replace."
+  (let ((linea desde))
+    (when (> (+ espini espfin) 0)
+      (while (< linea hasta)
+        (setq inicel (+ (* linea longr) inic init)
+              fincel (+ (* linea longr) finc init)
+              textocel (buffer-substring-no-properties iniciel fincel) )
+        (string-match (format "^ \\{%i\\}\\(.*\\) \\{%i\\}$" espini espfin) textocel)
+        (setq textocel (replace-match "\1" nil 't textocel))
+        (delete-region inicel fincel)
+        (goto-char inicel)
+        (insert textocel)
+        (setq linea (1+ linea))
+        )
+      )
+    )
   )
+
+
 
 (defun mssql-recortar-espacios-m2 ()
   "Recorta los espacios de la columna usando las coordenadas del texto para ir y borrarlos."
   )
+
+
 
 (defun mssql-recortar-espacios-m3 ()
   "Recorta los espacios de la columna usando las funciones de rectangulo para quitarlos todos de un solo golpe."
   )
 
 
+
 (defun mssql-recortar-espacios (tabla)
   "Recorre la tabla columna por columna haciendo recortes de los espacios en blanco."
-  (let ((init (nth 0 tabla))
-        (fint (nth 1 tabla))
-        (cab (nth 2 tabla))
-        (longr (nth 4 tabla))
-        (lcolsep (copy-sequence (nth 5 tabla)))
-        i )
+  (let* ((init (nth 0 tabla))
+         (fint (nth 1 tabla))
+         (longr (nth 4 tabla))
+         (alto (/ (- fint init) longr))
+         (inicue 1)
+         (cab (nth 2 tabla))
+         (lcolsep (copy-sequence (nth 5 tabla)))
+         (lrec (nth 7 tabla))
+         i )
 
     (setcdr (nthcdr (1- (length lcolsep)) lcolsep) (cons longr nil))
 
     (setq lcolsep (cons 0 lcolsep)
-          i (- (length lcolsep) 2))
+          i (- (length lcolsep) 1))
 
     ;; Recorre las columnas en orden inverso recortando los espacios.
-    (while (>= i 0)
+    (while (> i 0)
+      (setq espini (nth 0 (nth i lrec))
+            espfin (nth 1 (nth i lrec))
+            inicue 0)
+      (when cab
+        (mssql-recortar-espacios-m1
+         init fint lnogr (nth (1- i) lcolsep) (nth i lcolsep) 0 (+ espini espfin) 0 1)
+        (setq inicue 1) )
       (mssql-recortar-espacios-m1
-       init fint longr (nth i lcolsep) (nth (1+ i) lcolsep) cab)
-
+       init fint longr (nth (1- i) lcolsep) (nth i lcolsep) espini espfin inicue alto)
       (setq i (1- i))
       )
   ;; Si tiene cabecera hay que usar un método especial para la cabecera.
