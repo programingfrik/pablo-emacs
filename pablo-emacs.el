@@ -1265,6 +1265,8 @@ espacios de columna una a la vez."
   "Recorta los espacios de la columna usando una expresión regular. Haciendo un replace."
   (let ((linea desde))
     (when (> (+ espini espfin) 0)
+      ;; Recorre el bloque de la coluumna en orden inverso de la
+      ;; ultima linea a la primera.
       (while (< linea hasta)
         (setq inicel (+ (* linea longr) inic init)
               fincel (+ (* linea longr) finc init)
@@ -1295,12 +1297,12 @@ espacios de columna una a la vez."
 
 
 (defun mssql-recortar-espacios (tabla)
-  "Recorre la tabla columna por columna haciendo recortes de los espacios en blanco."
+  "Recorre la tabla columna por columna haciendo recortes de los espacios en blanco. Después de terminar de hacer los recortes no hay que actualizar la información de la tabla porque ya cumplimos nuestro objetivo, ya no se va a usar la información de la tabla para más nada."
   (let* ((init (nth 0 tabla))
          (fint (nth 1 tabla))
          (longr (nth 4 tabla))
          (alto (/ (- fint init) longr))
-         (inicue 1)
+         (inicue 0)
          (cab (nth 2 tabla))
          (lcolsep (copy-sequence (nth 5 tabla)))
          (lrec (nth 7 tabla))
@@ -1311,20 +1313,22 @@ espacios de columna una a la vez."
     (setq lcolsep (cons 0 lcolsep)
           i (- (length lcolsep) 1))
 
+    ;; Cuando hay cabecera el cuerpo empieza en el 1
+    (when cab (setq inicue 1))
+
     ;; Recorre las columnas en orden inverso recortando los espacios.
     (while (> i 0)
       (setq espini (nth 0 (nth i lrec))
-            espfin (nth 1 (nth i lrec))
-            inicue 0)
+            espfin (nth 1 (nth i lrec)) )
       (when cab
+        ;; Si tiene cabecera hay que hacer un recorrido para la cabecera.
         (mssql-recortar-espacios-m1
-         init fint lnogr (nth (1- i) lcolsep) (nth i lcolsep) 0 (+ espini espfin) 0 1)
-        (setq inicue 1) )
+         init fint lnogr (nth (1- i) lcolsep) (nth i lcolsep) 0 (+ espini espfin) 0 1) )
+      ;; Recorta los espacios del cuerpo
       (mssql-recortar-espacios-m1
        init fint longr (nth (1- i) lcolsep) (nth i lcolsep) espini espfin inicue alto)
       (setq i (1- i))
       )
-  ;; Si tiene cabecera hay que usar un método especial para la cabecera.
   ) )
 
 
