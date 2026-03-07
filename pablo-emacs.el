@@ -1263,20 +1263,23 @@ espacios de columna una a la vez."
 
 (defun mssql-recortar-espacios-m1 (init fint longr inic finc espini espfin desde hasta)
   "Recorta los espacios de la columna usando una expresión regular. Haciendo un replace."
-  (let ((linea desde))
+  (let ((linea (1- hasta)) inicel fincel textocel)
     (when (> (+ espini espfin) 0)
       ;; Recorre el bloque de la coluumna en orden inverso de la
       ;; ultima linea a la primera.
-      (while (< linea hasta)
+      (while (>= linea desde)
         (setq inicel (+ (* linea longr) inic init)
               fincel (+ (* linea longr) finc init)
-              textocel (buffer-substring-no-properties iniciel fincel) )
-        (string-match (format "^ \\{%i\\}\\(.*\\) \\{%i\\}$" espini espfin) textocel)
+              textocel (buffer-substring-no-properties
+                        iniciel fincel) )
+        (string-match
+         (format "^ \\{%i\\}\\(.*\\) \\{%i\\}$"
+                 espini espfin) textocel)
         (setq textocel (replace-match "\1" nil 't textocel))
         (delete-region inicel fincel)
         (goto-char inicel)
         (insert textocel)
-        (setq linea (1+ linea))
+        (setq linea (1- linea))
         )
       )
     )
