@@ -951,8 +951,8 @@ división, el cuerpo, o justo antes, la cabecera, si está."
     (when (re-search-backward
            (concat "^\\(\\(\n\t\\)\\|-\\)+"                  ;; Primera columna
                    "\\(\\([^\n-]\\)\\(\\(\n\t\\)\\|-\\)+"    ;; Primer separador y segunda columna.
-                   "\\(\\4\\(\\(\n\t\\)\\|-\\)+\\)*\\)?$" )) ;; Segundo separador (haciendo referencia al primero),
-                                                             ;; tercera columna y n repeticiones subsiguientes del conjunto.
+                   "\\(\\4\\(\\(\n\t\\)\\|-\\)+\\)*\\)?$" )  ;; Segundo separador (haciendo referencia al primero),
+           nil 't)                                           ;; tercera columna y n repeticiones subsiguientes del conjunto.
       (setq ini (match-beginning 0)
             fin (match-end 0)
             longr (length (match-string-no-properties 0))
