@@ -925,7 +925,7 @@ división, el cuerpo, o justo antes, la cabecera, si está."
       ;; salto que acabamos de dar para poder calcular la diferencia
       ;; en el próximo salto.
       (setq expreg (concat expreg
-                           (format "\\(.\\|\n\\)\\{%d\\}%s"
+                           (format "[^\n\t]\\{%d\\}%s"
                                    (- salto saltant) sepact) )
             saltant (+ salto (length sepact)) ))
     (concat expreg "\n") ))
@@ -934,8 +934,8 @@ división, el cuerpo, o justo antes, la cabecera, si está."
 
 (defun mssql-buscar-tabla ()
   "Busca y recoge la información inicial de una tabla mssql cli."
-  (let (ini      ;; Inicio de la tabla, hasta donde sabemos.
-        fin      ;; Fin de la tabla, hasta donde sabemos.
+  (let (init     ;; Inicio de la tabla, hasta donde sabemos.
+        fint     ;; Fin de la tabla, hasta donde sabemos.
         cab      ;; true si tiene cabecera
         longr    ;; longitud del registro
         llmarcas ;; lista de lista de marcas
@@ -953,8 +953,8 @@ división, el cuerpo, o justo antes, la cabecera, si está."
                    "\\(\\([^\n-]\\)\\(\\(\n\t\\)\\|-\\)+"    ;; Primer separador y segunda columna.
                    "\\(\\4\\(\\(\n\t\\)\\|-\\)+\\)*\\)?$" )  ;; Segundo separador (haciendo referencia al primero),
            nil 't)                                           ;; tercera columna y n repeticiones subsiguientes del conjunto.
-      (setq ini (match-beginning 0)
-            fin (match-end 0)
+      (setq init (match-beginning 0)
+            fint (match-end 0)
             longr (length (match-string-no-properties 0))
             lsep (list (match-string-no-properties 4)
                        (or (match-string-no-properties 2)
@@ -968,7 +968,7 @@ división, el cuerpo, o justo antes, la cabecera, si está."
         (setq llmarcas (append
                         llmarcas
                         (cons (mssql-listar-apariciones
-                               (nth i lsep) ini fin)
+                               (nth i lsep) init fint)
                               nil ))))
 
       ;; Con toda la información de la tabla arma una expresión
@@ -980,22 +980,22 @@ división, el cuerpo, o justo antes, la cabecera, si está."
       ;; cuerpo de la tabla.
 
       ;; Primero la cabecera mirando hacia atras
-      (goto-char ini)
+      (goto-char init)
       (when (looking-back expreg)
-        (setq ini (match-beginning 0)
+        (setq init (match-beginning 0)
               cab 't ))
 
       ;; Después el cuerpo.
-      (while (and (goto-char (1+ fin))
+      (while (and (goto-char (1+ fint))
                   (looking-at expreg) )
-        (setq fin (match-end 0)) )
+        (setq fint (match-end 0)) )
 
       ;; Ahora tienes el inicio y final de la tabla real
 
       ;; Pon toda esa información de la tabla en una lista, esta lista
       ;; es lo que vamos a retornar.
-      ;;            0   1   2   3            4
-      (append (list ini fin cab (nth 0 lsep) longr)
+      ;;            0    1    2   3            4
+      (append (list init fint cab (nth 0 lsep) longr)
               ;; 5 6         7
               llmarcas (cons nil nil)) )))
 
@@ -1007,8 +1007,8 @@ información de la tabla para queden todas las posiciones señalando su
 sitio real."
   (let (lposep         ;; Lista de posiciones de separador
         lpostrun       ;; Lista de posiciones de trunque
-        ini            ;; Posicion de inicio de la tabla
-        fin            ;; Posición de final de la tabla
+        init            ;; Posicion de inicio de la tabla
+        fint            ;; Posición de final de la tabla
         longr          ;; Longitud de un registro
         canr           ;; Cantidad de registros
         (trun "\n\t")  ;; La cadena que hace el trunque.
@@ -1020,12 +1020,12 @@ sitio real."
     ;; Si hay datos en la lista de posiciones de trunque
     (when (setq lpostrun (nth 6 tabla))
       ;; Toma los valores iniciales de las variables
-      (setq ini (nth 0 tabla)
-            fin (nth 1 tabla)
+      (setq init (nth 0 tabla)
+            fint (nth 1 tabla)
             longr (nth 4 tabla)
-            canr (/ (- fin ini) longr)
+            canr (/ (- fint init) longr)
             lposep (nth 5 tabla)
-            i fin ) ;; i comienza en la posición final del a tabla.
+            i fint ) ;; i comienza en la posición final del a tabla.
 
       ;; Elimina todos los trunques de cada registros. Se trabaja de
       ;; atras para adelante porque según se vayan eliminando los
@@ -1036,7 +1036,7 @@ sitio real."
       ;; no importa que se afecten las posiciones de atras porque ya
       ;; fueron modificadas y las de adelante que todavía no se han
       ;; tocado permanecen intactas.
-      (while (> i ini)
+      (while (> i init)
         (setq j (1- (length lpostrun))) ;; j comienza en la última
                                         ;; posicion de la lista de
         (while (>= j 0)                 ;; posiciones de trunque.
@@ -1048,7 +1048,7 @@ sitio real."
 
       ;; Modifica la longitud del registro eliminando los trunques.
       (setq longr (- longr (* (length lpostrun) (length trun)))
-            fin (+ ini (* canr longr)) ;; Recalcula el final
+            fint (+ init (* canr longr)) ;; Recalcula el final
             i 0 ;; Para la siguiente operación i y j empiezan en 0.
             j 0 )
 
@@ -1067,7 +1067,7 @@ sitio real."
 
       ;; Pon de regreso en la lista de información de la tabla los
       ;; campos que cambiaron por la eliminación de los trunques.
-      (setcar (nthcdr 1 tabla) fin)
+      (setcar (nthcdr 1 tabla) fint)
       (setcar (nthcdr 4 tabla) longr)
       (setcar (nthcdr 6 tabla) nil) )
     tabla ))
@@ -1081,19 +1081,19 @@ estan esos campos hay que cambiar esos caracteres de fines de lineas y
 dtab por un caracter de espacio. Ver los casos de prueba Prueba reparar
 tabla descripción servidor y Prueba reparar tabla descripción servidor
 2."
-  (let ((ini (nth 0 tabla))     ;; inicio de la tabla
-        (fin (nth 1 tabla))     ;; final de la tabla
+  (let ((init (nth 0 tabla))     ;; inicio de la tabla
+        (fint (nth 1 tabla))     ;; final de la tabla
         (longr (nth 4 tabla)) ) ;; longitud de un registro
 
     (replace-string-in-region   ;; Reemplaza cada tab por un espacio
-     "\t" " " ini fin)          ;; en la región de la tabla.
+     "\t" " " init fint)          ;; en la región de la tabla.
 
     ;; Con los caracteres de fines de linea es un poco más complicado
     ;; porque hay que eliminar los caracteres que son parte del texto
     ;; pero no los que separan un registro del siguiente.
-    (goto-char ini)
-    (while (search-forward "\n" fin 'end)
-      (when (not (= (% (- (match-beginning 0) ini) longr) 0))
+    (goto-char init)
+    (while (search-forward "\n" fint 'end)
+      (when (not (= (% (- (match-beginning 0) init) longr) 0))
         ;; Reemplaza un caracter de fin de linea con un espacio
         ;; siempre que este no se encuentre en una posición que sea
         ;; múltiplo de la longitud del registro.
@@ -1128,11 +1128,11 @@ inicio y para el final, o sea izquierda y derecha de la columna."
     ;; porque no se va a poder recortar nada sin dañar ese valor.
     (while (and (< linea hasta) (or (> meini 0) (> mefin 0)))
 
-      (setq inicel (+ (* linea longr) inic ini) ;; Toma el inicio de la división.
-            fincel (+ (* linea longr) finc ini) ;; Toma el final de la división.
+      (setq inicel (+ (* linea longr) inic init) ;; Toma el inicio de la división.
+            fincel (+ (* linea longr) finc init) ;; Toma el final de la división.
             textocel (buffer-substring-no-properties inicel fincel) ) ;; Toma el texto de la celda.
 
-      ;; (message "ini %i fin %i lon %i textocel \"%s\"" inicel fincel lon textocel)
+      ;; (message "init %i fint %i lon %i textocel \"%s\"" inicel fincel lon textocel)
 
       (string-match "^\\( *\\)\\(\\b.*\\b\\)?\\( *\\)$" textocel)
       (setq espini (length (match-string 1))
@@ -1335,6 +1335,12 @@ espacios de columna una a la vez."
   ) )
 
 
+(defun mssql-asegurar-inicio (tabla)
+  "Revisa que el inicio de la tabla esté al inicio de una nueva linea de manera que la tabla no quede desalineada."
+  (let (inicio )
+      
+      )
+  )
 
 ;; TODO: Algunas tablas muy grandes hacen que se vuelva un disparate la "reparación de la tabla". Ver caso de prueba "Prueba tabla grande".
 ;; TODO: Cuando se está reparando la tabla el usuario puede ver el cursor moviendose, lo correcto fuera que el usuario solo viera el resultado de la reparación y quizas algún tipo de indicación de progreso.
@@ -1378,7 +1384,6 @@ Para que esta función trabaje se recomienda que se usen las siguientes opciones
     (let (tabla)
 
       (when (setq tabla (mssql-buscar-tabla))
-        (message "%s" tabla)
         ;; La variable tabla es una lista
         ;; 1. el primer elemento es la pocision de inicio de la tabla
         ;; 2. el segundo es la pocisión final
@@ -1399,6 +1404,9 @@ Para que esta función trabaje se recomienda que se usen las siguientes opciones
         ;; puede recortar significa que ninguna fila tiene texto en
         ;; ese espacio.
 
+        ;; Asegura que la tabla comience al inicio de una linea.
+        (mssql-asegurar-inicio tabla)
+        
         ;; Quitale las propiedades a todo el texto de la tabla
         (set-text-properties (nth 0 tabla) (nth 1 tabla) nil)
 
