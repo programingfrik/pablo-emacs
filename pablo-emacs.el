@@ -1234,14 +1234,14 @@ espacios de columna una a la vez."
          (ultrec lrec)         ;; Último recorte último eslabón
          penrec)               ;; Penúltimo recorte
 
+    ;; Inserta un separador en la pocisión 0 del registro en el 0 de
+    ;; la lista de separadores.
+    (setq lcolsep (cons 0 lcolsep))
+
     ;; Agrega un elemento más a la lista de separadores al final, como
     ;; si hubiera un separador en el caracter de la última posición
     ;; del registro.
     (setcdr (nthcdr (1- (length lcolsep)) lcolsep) (cons longr nil))
-
-    ;; Inserta un separador en la pocisión 0 del registro en el 0 de
-    ;; la lista de separadores.
-    (setq lcolsep (cons 0 lcolsep))
 
     (dotimes (i (1- (length lcolsep))) ;; Recorre los separadores - 1
       (setcar ultrec (mssql-revisar-espacios-m1 ;; Revisa los espacios
@@ -1344,9 +1344,11 @@ espacios de columna una a la vez."
     (goto-char init)
     (when (not (bolp))
       (insert "\n")
-      (setq init (1+ init)
-            fint (1+ fint) ))
-    )
+      (setq init (+ init (length "\n"))
+            fint (+ fint (length "\n")) )
+      (setcar (nthcdr 0 tabla) init)
+      (setcar (nthcdr 1 tabla) fint) )
+    tabla )
   )
 
 
@@ -1414,8 +1416,8 @@ Para que esta función trabaje se recomienda que se usen las siguientes opciones
         ;; ese espacio.
 
         ;; Asegura que la tabla comience al inicio de una linea.
-        (mssql-asegurar-inicio tabla)
-        
+        (setq tabla (mssql-asegurar-inicio tabla))
+
         ;; Quitale las propiedades a todo el texto de la tabla
         (set-text-properties (nth 0 tabla) (nth 1 tabla) nil)
 
