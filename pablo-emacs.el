@@ -1337,9 +1337,18 @@ espacios de columna una a la vez."
 
 (defun mssql-asegurar-inicio (tabla)
   "Revisa que el inicio de la tabla esté al inicio de una nueva linea de manera que la tabla no quede desalineada."
-  (let (inicio )
-      
-      )
+  (let ((init (nth 0 tabla))
+        (fint (nth 1 tabla))
+        (llmarcas (nth 5 tabla)) )
+    (goto-char init)
+    (when (not (bolp))
+      (insert "\n")
+      (setq init (1+ init)
+            fint (1+ fint) )
+      (dolist (lmarcas llmarcas)
+        (dotimes (i (length lmarcas))
+          (setcar (nthcdr i lmarcas) (1+ (nth i lmarcas))) )))
+    )
   )
 
 ;; TODO: Algunas tablas muy grandes hacen que se vuelva un disparate la "reparación de la tabla". Ver caso de prueba "Prueba tabla grande".
