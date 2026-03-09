@@ -1335,6 +1335,7 @@ espacios de columna una a la vez."
   ) )
 
 
+
 (defun mssql-asegurar-inicio (tabla)
   "Revisa que el inicio de la tabla esté al inicio de una nueva linea de manera que la tabla no quede desalineada."
   (let ((init (nth 0 tabla))
@@ -1344,12 +1345,11 @@ espacios de columna una a la vez."
     (when (not (bolp))
       (insert "\n")
       (setq init (1+ init)
-            fint (1+ fint) )
-      (dolist (lmarcas llmarcas)
-        (dotimes (i (length lmarcas))
-          (setcar (nthcdr i lmarcas) (1+ (nth i lmarcas))) )))
+            fint (1+ fint) ))
     )
   )
+
+
 
 ;; TODO: Algunas tablas muy grandes hacen que se vuelva un disparate la "reparación de la tabla". Ver caso de prueba "Prueba tabla grande".
 ;; TODO: Cuando se está reparando la tabla el usuario puede ver el cursor moviendose, lo correcto fuera que el usuario solo viera el resultado de la reparación y quizas algún tipo de indicación de progreso.
