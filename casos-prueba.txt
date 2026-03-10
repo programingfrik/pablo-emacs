@@ -79,7 +79,7 @@ Federico Angel       |Iglesias Acosta        |     65000.00|07-01-1994     |Dire
 ----resultado----
 select top 3 * from camaradas
 go
-1> 2> 3> 4>
+1> 2> 3> 4> 
 nombre        |apellido       |sueldo  |nacimiento|puesto
 --------------|---------------|--------|----------|--------
 Carlos Alberto|Marcos Zapata  |30500.00|23-03-1983|Maestro
