@@ -67,7 +67,7 @@ Prueba Comentarios
 ----prueba----
 select top 3 * from camaradas
 go
-1> 2> 3> 4>nombre               |apellido               |sueldo       |nacimiento     |puesto          
+1> 2> 3> 4> nombre               |apellido               |sueldo       |nacimiento     |puesto          
 ---------------------|-----------------------|-------------|---------------|----------------
 Carlos Alberto       |Marcos Zapata          |     30500.00|23-03-1983     |Maestro         
 Simona Bueno         |Jimenez Garcia         |      9000.00|05-12-1958     |Faenaria        
