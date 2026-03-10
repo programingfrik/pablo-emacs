@@ -1323,15 +1323,14 @@ espacios de columna una a la vez."
     (while (>= i 0)
       (setq espini (nth 0 (nth i lrec))
             espfin (nth 1 (nth i lrec)) )
+      ;; Recorta los espacios del cuerpo
+      (mssql-recortar-espacios-m1
+       init fint longr (1+ (nth i lcolsep)) (1- (nth (1+ i) lcolsep)) espini espfin inicue alto)
       (when cab
         ;; Si tiene cabecera hay que hacer un recorrido para la cabecera.
         (mssql-recortar-espacios-m1
          init fint longr (1+ (nth i lcolsep)) (1- (nth (1+ i) lcolsep)) 0 (+ espini espfin) 0 1) )
-      ;; Recorta los espacios del cuerpo
-      (mssql-recortar-espacios-m1
-       init fint longr (1+ (nth i lcolsep)) (1- (nth (1+ i) lcolsep)) espini espfin inicue alto)
-      (setq i (1- i))
-      )
+      (setq i (1- i)) )
   ) )
 
 
