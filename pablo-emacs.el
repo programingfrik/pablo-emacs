@@ -1326,7 +1326,7 @@ espacios de columna una a la vez."
       (when cab
         ;; Si tiene cabecera hay que hacer un recorrido para la cabecera.
         (mssql-recortar-espacios-m1
-         init fint lnogr (1+ (nth i lcolsep)) (1- (nth (1+ i) lcolsep)) 0 (+ espini espfin) 0 1) )
+         init fint longr (1+ (nth i lcolsep)) (1- (nth (1+ i) lcolsep)) 0 (+ espini espfin) 0 1) )
       ;; Recorta los espacios del cuerpo
       (mssql-recortar-espacios-m1
        init fint longr (1+ (nth i lcolsep)) (1- (nth (1+ i) lcolsep)) espini espfin inicue alto)
