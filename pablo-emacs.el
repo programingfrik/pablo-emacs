@@ -877,10 +877,9 @@ región."
 
 
 
-(defun mssql-expresion-registro (longr ;; longitud del registro
+(defun mssql-expresion-registro (longr  ;; longitud del registro
                                  llmarcas  ;; lista de lista de marcas
-                                 lsep ;; La lista de separadores
-                                 )
+                                 lsep ) ;; La lista de separadores
   "Arma una expresión regular, con la longitud del registros los
 separadores y los trunques, cada registro que forme parte de esta tabla
 va a coincidir con esa expresión y se va a encontrar justo después de la
@@ -900,10 +899,10 @@ división, el cuerpo, o justo antes, la cabecera, si está."
     ;; ponerle a cada sub-expresión regular que va a coincidir con una
     ;; parte del texto de un registro. El siguiente algoritmo busca
     ;; cual es la siguiente cosa y determina la distancia.
-    (while (< salto longr) ;; Cada iteración es un salto.
-      (setq salto longr
+    (while (< salto (1- longr)) ;; Cada iteración es un salto.
+      (setq salto (1- longr)
             sel nil
-            sepact "")
+            sepact "" )
       ;; Buscando cual de las listas tiene una cosa más cercana.
       (dotimes (i (length llmarcas))
         (when (and (nth i llmarcas)
@@ -954,8 +953,8 @@ división, el cuerpo, o justo antes, la cabecera, si está."
                    "\\(\\4\\(\\(\n\t\\)\\|-\\)+\\)*\\)?$" )  ;; Segundo separador (haciendo referencia al primero),
            nil 't)                                           ;; tercera columna y n repeticiones subsiguientes del conjunto.
       (setq init (match-beginning 0)
-            fint (match-end 0)
-            longr (length (match-string-no-properties 0))
+            fint (1+ (match-end 0))
+            longr (1+ (length (match-string-no-properties 0)))
             lsep (list (match-string-no-properties 4)
                        (or (match-string-no-properties 2)
                            (match-string-no-properties 6)
@@ -986,7 +985,7 @@ división, el cuerpo, o justo antes, la cabecera, si está."
               cab 't ))
 
       ;; Después el cuerpo.
-      (while (and (goto-char (1+ fint))
+      (while (and (goto-char fint)
                   (looking-at expreg) )
         (setq fint (match-end 0)) )
 
@@ -1135,8 +1134,8 @@ inicio y para el final, o sea izquierda y derecha de la columna."
       ;; (message "init %i fint %i lon %i textocel \"%s\"" inicel fincel lon textocel)
 
       (string-match "^\\( *\\)\\(\\b.*\\b\\)?\\( *\\)$" textocel)
-      (setq espini (length (match-string 1))
-            espfin (length (match-string 3)) )
+      (setq espini (length (match-string-no-properties 1 textocel))
+            espfin (length (match-string-no-properties 3 textocel)) )
       ;; (message "espini %i espfin %i cantesp %i" espini espfin cantesp)
 
       (when (< espini meini) (setq meini espini))
@@ -1234,9 +1233,9 @@ espacios de columna una a la vez."
          (ultrec lrec)         ;; Último recorte último eslabón
          penrec)               ;; Penúltimo recorte
 
-    ;; Inserta un separador en la pocisión 0 del registro en el 0 de
+    ;; Inserta un separador en la pocisión -1 del registro en el 0 de
     ;; la lista de separadores.
-    (setq lcolsep (cons 0 lcolsep))
+    (setq lcolsep (cons -1 lcolsep))
 
     ;; Agrega un elemento más a la lista de separadores al final, como
     ;; si hubiera un separador en el caracter de la última posición
@@ -1245,8 +1244,8 @@ espacios de columna una a la vez."
 
     (dotimes (i (1- (length lcolsep))) ;; Recorre los separadores - 1
       (setcar ultrec (mssql-revisar-espacios-m1 ;; Revisa los espacios
-                      init fint longr (nth i lcolsep)
-                      (nth (1+ i) lcolsep) cab ))
+                      init fint longr (1+ (nth i lcolsep))
+                      (1- (nth (1+ i) lcolsep)) cab ))
       (setq penrec ultrec) ;; Apunta el penúltimo al último
       (setcdr ultrec (cons nil nil)) ;; Agrega un nuevo cons
       (setq ultrec (cdr ultrec)) ) ;; Apunta el último al

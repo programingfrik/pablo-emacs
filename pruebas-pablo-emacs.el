@@ -139,6 +139,7 @@
     (message "Tomó %02d:%02d:%02d.%03d" horas minutos segundos milesimas) ))
 
 ;; TODO: Hacer que funcionen todos los casos.
+;; TODO: Cuando uno de los casos proboca un error este error debería poder manejarse de forma controlada de manera que no se corte la ejecución repentinamente dejando los buffers temporales que se crearon pendientes de eliminar. Esto es una situación incomoda porque obliga a eliminar esos buffers manualmente después, además no se ve el sumario diciendo los casos que si funcionaron y los que terminaron en problemas etc. Los casos de prueba que hacen que la función de formatear tablas lance un error deberían ser contabilizados en las pruebas fallidas.
 (defun probar-casos-prueba (&optional n)
   "Una función para hacer las pruebas de casos-prueba.txt."
   (interactive "P")
