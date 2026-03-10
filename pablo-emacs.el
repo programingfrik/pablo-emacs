@@ -1220,7 +1220,7 @@ las columnas."
 
 
 
-(defun mssql-revisar-espacios-cols (tabla)
+(defun mssql-revisar-espacios (tabla)
   "Recorre las columnas llamando a la función que revisa los
 espacios de columna una a la vez."
   (let* ((init (nth 0 tabla))  ;; Inicio de la tabla
@@ -1256,7 +1256,7 @@ espacios de columna una a la vez."
     (setcar (nthcdr 7 tabla) lrec) ;; Pon la lista de los recortes en
                                    ;; el item 7 de la lista de
                                    ;; información de la tabla
-    tabla )) ;; Listo retorna la misma tabla recibida
+    )) ;; Listo retorna la misma tabla recibida
 
 
 
@@ -1270,11 +1270,11 @@ espacios de columna una a la vez."
         (setq inicel (+ (* linea longr) inic init)
               fincel (+ (* linea longr) finc init)
               textocel (buffer-substring-no-properties
-                        iniciel fincel) )
+                        inicel fincel) )
         (string-match
-         (format "^ \\{%i\\}\\(.*\\) \\{%i\\}$"
+         (format "^.\\{%i\\}\\(.*\\).\\{%i\\}$"
                  espini espfin) textocel)
-        (setq textocel (replace-match "\1" nil 't textocel))
+        (setq textocel (replace-match "\\1" 't nil textocel))
         (delete-region inicel fincel)
         (goto-char inicel)
         (insert textocel)
@@ -1310,25 +1310,26 @@ espacios de columna una a la vez."
          (lrec (nth 7 tabla))
          i )
 
+    (setq lcolsep (cons -1 lcolsep))
+
     (setcdr (nthcdr (1- (length lcolsep)) lcolsep) (cons longr nil))
 
-    (setq lcolsep (cons 0 lcolsep)
-          i (- (length lcolsep) 1))
+    (setq i (1- (length lrec)))
 
     ;; Cuando hay cabecera el cuerpo empieza en el 1
     (when cab (setq inicue 1))
 
     ;; Recorre las columnas en orden inverso recortando los espacios.
-    (while (> i 0)
+    (while (>= i 0)
       (setq espini (nth 0 (nth i lrec))
             espfin (nth 1 (nth i lrec)) )
       (when cab
         ;; Si tiene cabecera hay que hacer un recorrido para la cabecera.
         (mssql-recortar-espacios-m1
-         init fint lnogr (nth (1- i) lcolsep) (nth i lcolsep) 0 (+ espini espfin) 0 1) )
+         init fint lnogr (1+ (nth i lcolsep)) (1- (nth (1+ i) lcolsep)) 0 (+ espini espfin) 0 1) )
       ;; Recorta los espacios del cuerpo
       (mssql-recortar-espacios-m1
-       init fint longr (nth (1- i) lcolsep) (nth i lcolsep) espini espfin inicue alto)
+       init fint longr (1+ (nth i lcolsep)) (1- (nth (1+ i) lcolsep)) espini espfin inicue alto)
       (setq i (1- i))
       )
   ) )
@@ -1415,13 +1416,13 @@ Para que esta función trabaje se recomienda que se usen las siguientes opciones
         ;; ese espacio.
 
         ;; Asegura que la tabla comience al inicio de una linea.
-        (setq tabla (mssql-asegurar-inicio tabla))
+        (mssql-asegurar-inicio tabla)
 
         ;; Quitale las propiedades a todo el texto de la tabla
         (set-text-properties (nth 0 tabla) (nth 1 tabla) nil)
 
         ;; Elimina los trunques que tenga la tabla.
-        (setq tabla (mssql-quitar-trunques tabla))
+        (mssql-quitar-trunques tabla)
 
         ;; Reemplaza todos los caracteres tab y fin de linea dentro de
         ;; cada campo de la tabla por un espacio.
@@ -1429,10 +1430,10 @@ Para que esta función trabaje se recomienda que se usen las siguientes opciones
 
         ;; Revisa los espacios en blanco de cada columna, cuanto se
         ;; puede recortar y de que lado.
-        (setq tabla (mssql-revisar-espacios-cols tabla))
+        (mssql-revisar-espacios tabla)
 
         ;; Haz el recorte de los espacio
-        (setq tabla (mssql-recortar-espacios tabla))
+        (mssql-recortar-espacios tabla)
 
         )) ;; Listo!
     )
