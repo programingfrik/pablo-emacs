@@ -1080,23 +1080,23 @@ estan esos campos hay que cambiar esos caracteres de fines de lineas y
 dtab por un caracter de espacio. Ver los casos de prueba Prueba reparar
 tabla descripción servidor y Prueba reparar tabla descripción servidor
 2."
-  (let ((init (nth 0 tabla))     ;; inicio de la tabla
+  (let* ((init (nth 0 tabla))    ;; inicio de la tabla
         (fint (nth 1 tabla))     ;; final de la tabla
-        (longr (nth 4 tabla)) ) ;; longitud de un registro
+        (longr (nth 4 tabla))    ;; longitud de un registro
+        (inil init) )            ;; inicio de la linea actual
 
     (replace-string-in-region   ;; Reemplaza cada tab por un espacio
-     "\t" " " init fint)          ;; en la región de la tabla.
+     "\t" " " init fint)        ;; en la región de la tabla.
+
 
     ;; Con los caracteres de fines de linea es un poco más complicado
     ;; porque hay que eliminar los caracteres que son parte del texto
     ;; pero no los que separan un registro del siguiente.
-    (goto-char init)
-    (while (search-forward "\n" fint 'end)
-      (when (not (= (% (- (match-beginning 0) init) longr) 0))
-        ;; Reemplaza un caracter de fin de linea con un espacio
-        ;; siempre que este no se encuentre en una posición que sea
-        ;; múltiplo de la longitud del registro.
-        (replace-match " ") ))
+    (while (< inil fint)
+      ;; Reemplaza los caracteres de fin de linea dentro de la región
+      ;; del cuerpo del registro dejando fuera el final del registro.
+      (replace-string-in-region "\n" " " inil (+ inil (1- longr)))
+      (setq inil (+ inil longr)) )
     ))
 
 
