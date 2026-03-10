@@ -1133,7 +1133,7 @@ inicio y para el final, o sea izquierda y derecha de la columna."
 
       ;; (message "init %i fint %i lon %i textocel \"%s\"" inicel fincel lon textocel)
 
-      (string-match "^\\( *\\)\\(\\b.*\\b\\)?\\( *\\)$" textocel)
+      (string-match "^\\( *\\)\\(\\b.*?\\b\\)?\\( *\\)$" textocel)
       (setq espini (length (match-string-no-properties 1 textocel))
             espfin (length (match-string-no-properties 3 textocel)) )
       ;; (message "espini %i espfin %i cantesp %i" espini espfin cantesp)
