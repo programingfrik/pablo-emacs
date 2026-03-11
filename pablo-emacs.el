@@ -924,7 +924,7 @@ división, el cuerpo, o justo antes, la cabecera, si está."
       ;; salto que acabamos de dar para poder calcular la diferencia
       ;; en el próximo salto.
       (setq expreg (concat expreg
-                           (format "[^\n\t]\\{%d\\}%s"
+                           (format "<caracter>\\{%d\\}%s"
                                    (- salto saltant) sepact) )
             saltant (+ salto (length sepact)) ))
     (concat expreg "\n") ))
@@ -980,13 +980,15 @@ división, el cuerpo, o justo antes, la cabecera, si está."
 
       ;; Primero la cabecera mirando hacia atras
       (goto-char init)
-      (when (looking-back expreg)
+      (when (looking-back (string-replace
+                           "<caracter>" "[^\n\t]" expreg ))
         (setq init (match-beginning 0)
               cab 't ))
 
       ;; Después el cuerpo.
       (while (and (goto-char fint)
-                  (looking-at expreg) )
+                  (looking-at (string-replace
+                               "<caracter>" "\\(.\\|\n\\)" expreg) ))
         (setq fint (match-end 0)) )
 
       ;; Ahora tienes el inicio y final de la tabla real
