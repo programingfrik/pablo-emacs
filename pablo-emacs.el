@@ -1240,12 +1240,12 @@ espacios de columna una a la vez."
     ;; Agrega un elemento más a la lista de separadores al final, como
     ;; si hubiera un separador en el caracter de la última posición
     ;; del registro.
-    (setcdr (nthcdr (1- (length lcolsep)) lcolsep) (cons longr nil))
+    (setcdr (nthcdr (1- (length lcolsep)) lcolsep) (cons (1- longr) nil))
 
     (dotimes (i (1- (length lcolsep))) ;; Recorre los separadores - 1
       (setcar ultrec (mssql-revisar-espacios-m1 ;; Revisa los espacios
                       init fint longr (1+ (nth i lcolsep))
-                      (1- (nth (1+ i) lcolsep)) cab ))
+                      (nth (1+ i) lcolsep) cab ))
       (setq penrec ultrec) ;; Apunta el penúltimo al último
       (setcdr ultrec (cons nil nil)) ;; Agrega un nuevo cons
       (setq ultrec (cdr ultrec)) ) ;; Apunta el último al
@@ -1260,26 +1260,31 @@ espacios de columna una a la vez."
 
 
 
-(defun mssql-recortar-espacios-m1 (init fint longr inic finc espini espfin desde hasta)
-  "Recorta los espacios de la columna usando una expresión regular. Haciendo un replace."
-  (let ((linea (1- hasta)) inicel fincel textocel)
-    (when (> (+ espini espfin) 0)
-      ;; Recorre el bloque de la coluumna en orden inverso de la
-      ;; ultima linea a la primera.
-      (while (>= linea desde)
-        (setq inicel (+ (* linea longr) inic init)
-              fincel (+ (* linea longr) finc init)
-              textocel (buffer-substring-no-properties
-                        inicel fincel) )
-        (string-match
-         (format "^.\\{%i\\}\\(.*\\).\\{%i\\}$"
-                 espini espfin) textocel)
-        (setq textocel (replace-match "\\1" 't nil textocel))
-        (delete-region inicel fincel)
-        (goto-char inicel)
-        (insert textocel)
-        (setq linea (1- linea))
-        )
+(defun mssql-recortar-espacios-celda-m1 (linea lcolsep lrec cab)
+  "Recorta los espacios de la linea celda por celda en orden inverso, de la derecha, el final, hasta el principio la izquierda."
+  (let ((i (1- (length lrec)))
+        espini espfin inicel fincel textocel )
+
+    (while (>= i 0)
+      (setq espini (nth 0 (nth i lrec))
+            espfin (nth 1 (nth i lrec))
+            inicel (+ linea (1+ (nth i lcolsep)))
+            fincel (+ linea (nth (1+ i) lcolsep))
+            textocel (buffer-substring-no-properties
+                      inicel fincel) )
+
+      (when cab
+        (setq espfin (+ espini espfin)
+              espini 0 ))
+
+      (string-match
+       (format "^.\\{%i\\}\\(.*\\).\\{%i\\}$"
+               espini espfin) textocel)
+      (setq textocel (replace-match "\\1" 't nil textocel))
+      (delete-region inicel fincel)
+      (goto-char inicel)
+      (insert textocel)
+      (setq i (1- i))
       )
     )
   )
@@ -1298,7 +1303,7 @@ espacios de columna una a la vez."
 
 
 
-(defun mssql-recortar-espacios (tabla)
+(defun mssql-recortar-espacios-m1 (tabla)
   "Recorre la tabla columna por columna haciendo recortes de los espacios en blanco. Después de terminar de hacer los recortes no hay que actualizar la información de la tabla porque ya cumplimos nuestro objetivo, ya no se va a usar la información de la tabla para más nada."
   (let* ((init (nth 0 tabla))
          (fint (nth 1 tabla))
@@ -1308,29 +1313,31 @@ espacios de columna una a la vez."
          (cab (nth 2 tabla))
          (lcolsep (copy-sequence (nth 5 tabla)))
          (lrec (nth 7 tabla))
-         i )
+         (linea (1- alto)) )
 
     (setq lcolsep (cons -1 lcolsep))
 
-    (setcdr (nthcdr (1- (length lcolsep)) lcolsep) (cons longr nil))
-
-    (setq i (1- (length lrec)))
+    (setcdr (nthcdr (1- (length lcolsep)) lcolsep) (cons (1- longr) nil))
 
     ;; Cuando hay cabecera el cuerpo empieza en el 1
     (when cab (setq inicue 1))
 
-    ;; Recorre las columnas en orden inverso recortando los espacios.
-    (while (>= i 0)
-      (setq espini (nth 0 (nth i lrec))
-            espfin (nth 1 (nth i lrec)) )
-      ;; Recorta los espacios del cuerpo
-      (mssql-recortar-espacios-m1
-       init fint longr (1+ (nth i lcolsep)) (1- (nth (1+ i) lcolsep)) espini espfin inicue alto)
-      (when cab
-        ;; Si tiene cabecera hay que hacer un recorrido para la cabecera.
-        (mssql-recortar-espacios-m1
-         init fint longr (1+ (nth i lcolsep)) (1- (nth (1+ i) lcolsep)) 0 (+ espini espfin) 0 1) )
-      (setq i (1- i)) )
+    ;; Recorre las lineas de la última a la primera.
+    (while (>= linea inicue)
+      (mssql-recortar-espacios-celda-m1 (+ init (* linea longr)) lcolsep lrec nil)
+      (setq linea (1- linea)) )
+
+    (when cab
+      ;; Si hay cabecera recorta los espacios también de la cabecera.
+      (setq linea 0)
+      (mssql-recortar-espacios-celda-m1 (+ init (* linea longr)) lcolsep lrec cab) )
+
+    ;; Recalcula el final de la tabla
+    (dolist (rec lrec)
+      (setq fint (- fint (* (+ (nth 0 rec) (nth 1 rec)) alto))) )
+
+    ;; Recorta los últimos espacios de la última columna.
+    (replace-regexp-in-region "[ \t]+$" "" init fint)
   ) )
 
 
@@ -1432,7 +1439,7 @@ Para que esta función trabaje se recomienda que se usen las siguientes opciones
         (mssql-revisar-espacios tabla)
 
         ;; Haz el recorte de los espacio
-        (mssql-recortar-espacios tabla)
+        (mssql-recortar-espacios-m1 tabla)
 
         )) ;; Listo!
     )
