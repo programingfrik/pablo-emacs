@@ -165,6 +165,8 @@ Si se trata de un fichero o un directorio lo abre en el propio Emacs.
     )
   )
 
+
+
 (defun pablo-select-text (text)
   "Select TEXT, a string, according to the window system.
 
@@ -912,7 +914,7 @@ inicio y al final del texto de la celda."
     ;; Si hay cabecera y los espacios no son 0 y los espacios de la
     ;; cabecera son menores que los espacios del cuerpo hay que
     ;; ajustarlos para poder recortar sin dañar la cabecera
-    (when (and cab (< 0 sumcab sumcue))
+    (when (and cab (< 0 (+ sumcab sumcue)) (< sumcab sumcue))
       (setq sobra (- sumcue sumcab))
 
       ;; Si la sobra es mayor que el espacio del final

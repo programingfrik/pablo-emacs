@@ -54,7 +54,7 @@
     (kill-buffer dbuffer)
     resultado ))
 
-(defun probar-caso-avanzar (expdiv posfin tbfich tbprueba tbresultado)
+(defun probar-caso-avanzar (expdiv posfin tbfich tbprueba tbresultado ncaso)
   (let ((expdiv2 "-\\{4\\}")
         (cursor "<cursor>")
         posini posbar titulo comando subini subfin temptit exito)
@@ -65,7 +65,7 @@
     (setq titulo (buffer-substring (line-beginning-position)
                                    (line-end-position)))
 
-    (setq temptit (format "Prueba: %s" titulo))
+    (setq temptit (format "Prueba %i : %s" ncaso titulo))
     (setq temptit (format-spec
                    "%a\n%t\n%a"
                    (list (cons ?a (make-string
@@ -148,7 +148,7 @@
        (tbprueba (generate-new-buffer "*tbprueba*"))
        (tbresultado (generate-new-buffer "*tbresultado*"))
        (cont 0) (cexito 0) (expdiv "=\\{70\\}\n")
-       pos rescaso final tini dura)
+       pos rescaso final tini dura (ncaso 0))
     (save-excursion
       (save-restriction
 
@@ -178,6 +178,7 @@
                 (if (re-search-forward expdiv nil 'end)
                     (setq final (match-beginning 0))
                   (setq final (point)) )
+                (setq ncaso n)
                 (goto-char pos) )
             (progn
               ;; Si no encontraste el inicio del caso no hay tal caso,
@@ -190,15 +191,16 @@
         (while (< pos final)
 
           (setq tini (current-time)
-                rescaso (probar-caso-avanzar expdiv pos tbfich
-                                             tbprueba tbresultado)
+                rescaso (probar-caso-avanzar
+                         expdiv pos tbfich tbprueba tbresultado ncaso)
                 dura (time-subtract (current-time) tini) )
 
           (when (car (cdr rescaso))
             (setq cexito (1+ cexito)))
 
           (setq pos (car rescaso)
-                cont (1+ cont))
+                cont (1+ cont)
+                ncaso (1+ ncaso))
 
           (decir-duracion dura) )
 
