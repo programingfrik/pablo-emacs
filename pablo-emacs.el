@@ -731,7 +731,7 @@ división, el cuerpo, o justo antes, la cabecera, si está."
       ;;            0    1    2   3            4
       (append (list init fint cab (nth 0 lsep) longr)
               ;; 5 6         7
-              llmarcas (cons nil nil)) )))
+              llmarcas (cons nil nil) ))))
 
 
 
@@ -866,16 +866,15 @@ inicio y para el final, o sea izquierda y derecha de la columna."
             fincel (+ (* linea longr) finc init) ;; Toma el final de la división.
             textocel (buffer-substring-no-properties inicel fincel) ) ;; Toma el texto de la celda.
 
-      ;; (message "init %i fint %i lon %i textocel \"%s\"" inicel fincel lon textocel)
-
       (string-match "^\\( *\\)\\(.*?\\)?\\( *\\)$" textocel)
       (setq espini (length (match-string-no-properties 1 textocel))
             espfin (length (match-string-no-properties 3 textocel)) )
-      ;; (message "espini %i espfin %i cantesp %i" espini espfin cantesp)
 
-      (when (< espini meini) (setq meini espini))
+      (when (< (+ espini espfin) (1- longr))
 
-      (when (< espfin mefin) (setq mefin espfin))
+        (when (< espini meini) (setq meini espini))
+
+        (when (< espfin mefin) (setq mefin espfin)) )
 
       (setq linea (1+ linea)) )
     (list meini mefin) ))
