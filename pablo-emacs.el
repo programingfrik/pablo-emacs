@@ -1072,7 +1072,7 @@ espacios de columna una a la vez."
 
     ;; Recorta los últimos espacios de la última columna.
     (replace-regexp-in-region "[ \t]+$" "" init fint)
-  ) )
+  ))
 
 
 
@@ -1092,6 +1092,48 @@ espacios de columna una a la vez."
   )
 
 
+(defun mssql-hackeo-255 (tabla)
+  "Esto es un hackeo sucio para un caso especial en el que la tabla
+supuestamente tiene 255 caracteres de ancho, pero en realidad solo la
+cabecera tiene eso, el resto, el cuerpo tiene 254."
+  (let* ((init (nth 0 tabla))
+         (fint (nth 1 tabla))
+         (longr (nth 4 tabla))
+         (alto (/ (- fint init) longr))
+         (cab (nth 2 tabla))
+         (lcolsep (nth 5 tabla))
+         posact poscar1 car1 poscar2 car2
+         (ttabla tabla))
+
+    (when (and (= longr 256) cab (or (= alto 2) (= alto 3)) (not lcolsep))
+      ;; Eliminale 1 caracteres del final antes del fin de linea a
+      ;; cada una de esas 2 filas
+      (setq posact (point))
+
+      (goto-char (1- (+ init (* longr 2))))
+      (setq car2 (char-before)
+            poscar2 (1- (point)) )
+      (delete-backward-char 1)
+
+      (goto-char (- (+ init longr) 2))
+      (setq car1 (char-before)
+            poscar1 (1- (point)) )
+      (delete-backward-char 1)
+
+      ;; Vuelve a tratar de captar la información de la tabla.
+      (goto-char posact)
+      (setq ttabla (mssql-buscar-tabla))
+
+      ;; Si se obtuvieron más registros que los 2 que teniamos antes,
+      ;; entonces esta es la información correcta, sustituye la
+      ;; información dentro de tabla.
+      (unless (> (/ (- (nth 1 ttabla) (nth 0 ttabla)) (nth 4 ttabla)) alto)
+        (goto-char poscar1)
+        (insert-char car1)
+        (goto-char poscar2)
+        (insert-char car2)
+        (setq ttabla tabla) ))
+    ttabla ))
 
 ;; TODO: Algunas tablas muy grandes hacen que se vuelva un disparate la "reparación de la tabla". Ver caso de prueba "Prueba tabla grande".
 ;; TODO: Cuando se está reparando la tabla el usuario puede ver el cursor moviendose, lo correcto fuera que el usuario solo viera el resultado de la reparación y quizas algún tipo de indicación de progreso.
@@ -1154,6 +1196,8 @@ Para que esta función trabaje se recomienda que se usen las siguientes opciones
         ;; elemento lo que se puede recortar desde la derecha. Que se
         ;; puede recortar significa que ninguna fila tiene texto en
         ;; ese espacio.
+
+        (setq tabla (mssql-hackeo-255 tabla))
 
         ;; Asegura que la tabla comience al inicio de una linea.
         (mssql-asegurar-inicio tabla)
