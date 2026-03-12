@@ -138,6 +138,7 @@
           horas (/ resto 60) )
     (message "Tomó %02d:%02d:%02d.%03d" horas minutos segundos milesimas) ))
 
+;; TODO: Debería dar un acumulado de cuanto tiempo tamaron todas las pruebas en conjunto.
 ;; TODO: Hacer que funcionen todos los casos.
 ;; TODO: Cuando uno de los casos proboca un error este error debería poder manejarse de forma controlada de manera que no se corte la ejecución repentinamente dejando los buffers temporales que se crearon pendientes de eliminar. Esto es una situación incomoda porque obliga a eliminar esos buffers manualmente después, además no se ve el sumario diciendo los casos que si funcionaron y los que terminaron en problemas etc. Los casos de prueba que hacen que la función de formatear tablas lance un error deberían ser contabilizados en las pruebas fallidas.
 (defun probar-casos-prueba (&optional n)
@@ -148,7 +149,7 @@
        (tbprueba (generate-new-buffer "*tbprueba*"))
        (tbresultado (generate-new-buffer "*tbresultado*"))
        (cont 0) (cexito 0) (expdiv "=\\{70\\}\n")
-       pos rescaso final tini dura (ncaso 0))
+       pos rescaso final tini dura (ncaso 0) tinip)
     (save-excursion
       (save-restriction
 
@@ -163,7 +164,8 @@
         (insert-file-contents "casos-prueba.txt")
         (goto-char (point-min))
         (setq pos (point-min)
-              final (point-max))
+              final (point-max)
+              tinip (current-time) )
 
         ;; Si n tiene un número solo ejecuta la prueba n,
         ;; sino ejecuta cada caso.
@@ -207,10 +209,12 @@
         ) )
     ;; Cuando se terminen todos los casos de prueba hay que hacer un
     ;; sumario.
-    (message (concat "Pruebas realizadas %d\n"
+    (message (concat "\n\nPruebas realizadas %d\n"
                      "Pruebas exitosas %d\n"
-                     "Pruebas fallidas %d")
+                     "Pruebas fallidas %d\n"
+                     "Tiempo Total")
              cont cexito (- cont cexito))
+    (decir-duracion (time-subtract (current-time) tinip))
 
     ;; Antes de cerrar el let hay que eliminar los buffers porque se
     ;; van a perder las variables

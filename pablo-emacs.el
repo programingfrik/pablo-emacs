@@ -1011,17 +1011,10 @@ espacios de columna una a la vez."
         (setq espfin (+ espini espfin)
               espini 0 ))
 
-      (string-match
-       (format "^.\\{%i\\}\\(.*\\).\\{%i\\}$"
-               espini espfin) textocel)
-      (setq textocel (replace-match "\\1" 't nil textocel))
-      (delete-region inicel fincel)
-      (goto-char inicel)
-      (insert textocel)
-      (setq i (1- i))
-      )
-    )
-  )
+      (delete-region inicel (+ inicel espini))
+      (delete-region (- fincel espfin) fincel)
+      (setq i (1- i)) )
+    ))
 
 
 
