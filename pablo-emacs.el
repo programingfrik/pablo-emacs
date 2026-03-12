@@ -1135,16 +1135,16 @@ cabecera tiene eso, el resto, el cuerpo tiene 254."
         (setq ttabla tabla) ))
     ttabla ))
 
-;; TODO: Algunas tablas muy grandes hacen que se vuelva un disparate la "reparación de la tabla". Ver caso de prueba "Prueba tabla grande".
-;; TODO: Cuando se está reparando la tabla el usuario puede ver el cursor moviendose, lo correcto fuera que el usuario solo viera el resultado de la reparación y quizas algún tipo de indicación de progreso.
+
+
+;; TODO: Documentar lo mejor posible como funciona esto
+;; TODO: Terminar de hacer los otros métodos para revisar y recortar los espacios.
 ;; TODO: Quizas fuera más fácil hacer la reparación completa en memoria y solo hacer en el buffer la parte de capturar la tabla y cuando se vuelve a poner en el buffer.
 ;; TODO: La región no se está usando realmente, no se está tomando en cuenta.
-;; TODO: Esta función debería sustituir la función \"reparar-stored-procedure\". Ver caso de prueba "Prueba fuente procedure".
 ;; TODO: Esta función podría hacer recortes a las columnas para adaptarlas a un ancho de pantalla específico.
 ;; TODO: ¿Existe la posibilidad que un buffer sqli llame de forma automática a la función de reformat cada vez que hace un query? investigar. Esta llamada automática, si se logra hacer de una forma confiable ahorraría el trabajo de tener que llamar la función de reformatear la tabla que cuando estoy trabajando en un buffer sqli hago casi siempre después de una consulta.
 ;; TODO: A veces en algunas columnas de algunas tablas se usa el tipo de dato datetime para almacenar una fecha, la parte de la hora queda sin uso, o sea siempre mostrando 00:00:00.000. Sería bueno que en estos casos en que todos los valores de horas de una columna datetime estuvieran en 0, eliminar esos 0 que no aportan ninguna información. Ver en los casos de prueba la "Prueba tabla grande 2".
 ;; TODO: En ese mismo sentido una columna con valores numéricos que muestra siempre 0 ceros a la derecha del punto que tampoco aportan información, se podría recortar para que no muestre estos ceros. Ver el caso de prueba Prueba tabla grande en la columna salario.
-;; TODO: Cuando se reformatea una tabla, la columna de más a la derecha, una vez recortada no necesita conservar sus espacios en blanco a la derecha.
 (defun mssql-reformat-table (&optional start end)
   "Reformats text tables from mssql cli as thin as posible.
 
@@ -1219,9 +1219,8 @@ Para que esta función trabaje se recomienda que se usen las siguientes opciones
         ;; Haz el recorte de los espacio
         (mssql-recortar-espacios-m1 tabla)
 
-        )) ;; Listo!
-    )
-)
+        ) ;; Listo!
+      )))
 
 
 
