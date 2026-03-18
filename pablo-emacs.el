@@ -1138,6 +1138,7 @@ cabecera tiene eso, el resto, el cuerpo tiene 254."
 ;; TODO: ¿Existe la posibilidad que un buffer sqli llame de forma automática a la función de reformat cada vez que hace un query? investigar. Esta llamada automática, si se logra hacer de una forma confiable ahorraría el trabajo de tener que llamar la función de reformatear la tabla que cuando estoy trabajando en un buffer sqli hago casi siempre después de una consulta.
 ;; TODO: A veces en algunas columnas de algunas tablas se usa el tipo de dato datetime para almacenar una fecha, la parte de la hora queda sin uso, o sea siempre mostrando 00:00:00.000. Sería bueno que en estos casos en que todos los valores de horas de una columna datetime estuvieran en 0, eliminar esos 0 que no aportan ninguna información. Ver en los casos de prueba la "Prueba tabla grande 2".
 ;; TODO: En ese mismo sentido una columna con valores numéricos que muestra siempre 0 ceros a la derecha del punto que tampoco aportan información, se podría recortar para que no muestre estos ceros. Ver el caso de prueba Prueba tabla grande en la columna salario.
+;; TODO: No hay ningún caso que use el trunque, incluir un par de casos y hacer que funcionen bien.
 (defun mssql-reformat-table (&optional start end)
   "Reformats text tables from mssql cli as thin as posible.
 
