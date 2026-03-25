@@ -684,7 +684,7 @@ división, el cuerpo, o justo antes, la cabecera, si está."
     ;; trunques..
     (when (re-search-backward
            (concat "^\\(\\(\n\t\\)\\|-\\)+"                  ;; Primera columna
-                   "\\(\\([^\n-]\\)\\(\\(\n\t\\)\\|-\\)+"    ;; Primer separador y segunda columna.
+                   "\\(\\([^\n-]\\)\\(\\(\n\t\\)\\|-\\)+"    ;; Primer separador y segunda columna, opcional.
                    "\\(\\4\\(\\(\n\t\\)\\|-\\)+\\)*\\)?$" )  ;; Segundo separador (haciendo referencia al primero),
            nil 't)                                           ;; tercera columna y n repeticiones subsiguientes del conjunto.
       (setq init (match-beginning 0)
