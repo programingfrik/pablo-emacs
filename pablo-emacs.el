@@ -597,8 +597,8 @@ Right now it doesn't sopport comma characters as values embeded in quotes.
 
 
 (defun mssql-listar-apariciones(sujeto inicio fin)
-  "Hace una lista de las posiciones en las que aparece una cadena en una
-región."
+  "Hace una lista de las posiciones en las que aparece una cadena en
+una región."
   (let (lpos post)
     (when sujeto
       (goto-char inicio)
@@ -636,7 +636,8 @@ división, el cuerpo, o justo antes, la cabecera, si está."
       (setq salto (1- longr)
             sel nil
             sepact "" )
-      ;; Buscando cual de las listas tiene una cosa más cercana.
+      ;; Buscando cual de las sub listas de la lista de lista de
+      ;; marcas tiene una cosa más cercana, o sea con el salto menor.
       (dotimes (i (length llmarcas))
         (when (and (nth i llmarcas)
                    (setq proxsalt
@@ -645,7 +646,7 @@ división, el cuerpo, o justo antes, la cabecera, si está."
                    (< proxsalt salto) )
           (setq sel i
                 salto proxsalt) ))
-      ;; Cuando la cosa está segura seleccionada incrementa el
+      ;; Cuando la cosa está segura, seleccionada, incrementa el
       ;; contador de esa lista y selecciona cual es el separador
       ;; actual.
       (when sel
@@ -660,6 +661,7 @@ división, el cuerpo, o justo antes, la cabecera, si está."
                            (format "<caracter>\\{%d\\}%s"
                                    (- salto saltant) sepact) )
             saltant (+ salto (length sepact)) ))
+    ;; Retorna la expresión regular que armamos.
     (concat expreg "\n") ))
 
 
@@ -692,6 +694,7 @@ división, el cuerpo, o justo antes, la cabecera, si está."
                        (or (match-string-no-properties 2)
                            (match-string-no-properties 6)
                            (match-string-no-properties 9) )))
+      ;; TODO: Tal vez con el mismo texto de la división vertical se puede armar la expresión regular para detectar los registros y así nos ahorramos un paso.
 
       ;; De la division vertical toma las divisiones horizontales, el
       ;; caracter separador y los puntos donde está truncada la
@@ -719,9 +722,10 @@ división, el cuerpo, o justo antes, la cabecera, si está."
               cab 't ))
 
       ;; Después el cuerpo.
+      (setq expreg (string-replace
+                    "<caracter>" "\\(.\\|\n\\)" expreg))
       (while (and (goto-char fint)
-                  (looking-at (string-replace
-                               "<caracter>" "\\(.\\|\n\\)" expreg) ))
+                  (looking-at expreg) )
         (setq fint (match-end 0)) )
 
       ;; Ahora tienes el inicio y final de la tabla real
@@ -741,8 +745,8 @@ información de la tabla para queden todas las posiciones señalando su
 sitio real."
   (let (lposep         ;; Lista de posiciones de separador
         lpostrun       ;; Lista de posiciones de trunque
-        init            ;; Posicion de inicio de la tabla
-        fint            ;; Posición de final de la tabla
+        init           ;; Posicion de inicio de la tabla
+        fint           ;; Posición de final de la tabla
         longr          ;; Longitud de un registro
         canr           ;; Cantidad de registros
         (trun "\n\t")  ;; La cadena que hace el trunque.
@@ -759,7 +763,7 @@ sitio real."
             longr (nth 4 tabla)
             canr (/ (- fint init) longr)
             lposep (nth 5 tabla)
-            i fint ) ;; i comienza en la posición final del a tabla.
+            i fint ) ;; i comienza en la posición final de la tabla.
 
       ;; Elimina todos los trunques de cada registros. Se trabaja de
       ;; atras para adelante porque según se vayan eliminando los
@@ -790,7 +794,7 @@ sitio real."
       ;; los trunques que le correspondan.
 
       ;; Restale a las posiciones de los separadores la cantidad de
-      ;; trunques que están por detras de ese separador.
+      ;; trunques que están antes de ese separador.
       (while (< i (length lposep)) ;; Mientras haya separadores
         (while (and (< j (length lpostrun)) ;; Mientras haya trunques
                     (> (nth i lposep) (nth j lpostrun)) ) ;; y el separador
@@ -800,7 +804,8 @@ sitio real."
         (setq i (1+ i)) ) ;; pasa al siguiente separador
 
       ;; Pon de regreso en la lista de información de la tabla los
-      ;; campos que cambiaron por la eliminación de los trunques.
+      ;; campos que cambiaron por la eliminación de los trunques o sea
+      ;; final de la tabla, longitud de registro y separadores.
       (setcar (nthcdr 1 tabla) fint)
       (setcar (nthcdr 4 tabla) longr)
       (setcar (nthcdr 6 tabla) nil) )
@@ -810,11 +815,11 @@ sitio real."
 
 (defun mssql-reemplazar-fines-tabs (tabla)
   "A veces ocurre que algunos valores de texto de algunos campos tienen
-fines de lineas y tabs para poder reformatear las tablas en las que
-estan esos campos hay que cambiar esos caracteres de fines de lineas y
-dtab por un caracter de espacio. Ver los casos de prueba Prueba reparar
-tabla descripción servidor y Prueba reparar tabla descripción servidor
-2."
+fines de lineas y tabs. Para poder reformatear las tablas en las
+que estan esos campos hay que cambiar esos caracteres de fines de
+lineas y tab por un caracter de espacio. Ver los casos de prueba
+Prueba reparar tabla descripción servidor y Prueba reparar tabla
+descripción servidor 2."
   (let* ((init (nth 0 tabla))    ;; inicio de la tabla
         (fint (nth 1 tabla))     ;; final de la tabla
         (longr (nth 4 tabla))    ;; longitud de un registro
@@ -823,10 +828,9 @@ tabla descripción servidor y Prueba reparar tabla descripción servidor
     (replace-string-in-region   ;; Reemplaza cada tab por un espacio
      "\t" " " init fint)        ;; en la región de la tabla.
 
-
     ;; Con los caracteres de fines de linea es un poco más complicado
-    ;; porque hay que eliminar los caracteres que son parte del texto
-    ;; pero no los que separan un registro del siguiente.
+    ;; porque hay que reemplazar los caracteres que son parte del
+    ;; texto pero no los que separan un registro del siguiente.
     (while (< inil fint)
       ;; Reemplaza los caracteres de fin de linea dentro de la región
       ;; del cuerpo del registro dejando fuera el final del registro.
@@ -844,12 +848,13 @@ tabla descripción servidor y Prueba reparar tabla descripción servidor
                                         desde  ;; Linea inicial del bloque
                                         hasta) ;; Linea limite bloque no incluida
   "Revisa un bloque de una columna. Si hay una cabecera esta se toma como
-un bloque, el cuerpo es otro bloque. Esta función recorre ese bloque
-buscando los espacios y tomando el menor de todo el bloque para el
-inicio y para el final, o sea izquierda y derecha de la columna."
+un bloque, el cuerpo es otro bloque. Esta función recorre el
+bloque indicado buscando los espacios en cada registro y tomando
+el menor de todo el bloque para el inicio y para el final, o sea
+izquierda y derecha de la columna."
   (let ((linea desde) ;; Indice indica linea actual
-        (meini longr) ;; Mínimo espacio inicio
-        (mefin longr) ;; Mínimo espacio fin
+        (meini longr) ;; Mínimo espacio inicio izquierda recortable
+        (mefin longr) ;; Mínimo espacio fin derecha recortable
         inicel        ;; Inicio de la celda
         fincel        ;; Fin de la celda
         textocel      ;; El texto de la celda actual
@@ -890,12 +895,12 @@ inicio y para el final, o sea izquierda y derecha de la columna."
   "Revisa los espacios de una columna usando el método 1, recorriendo valor
 por valor usando una expresión regular para saber que espacio hay al
 inicio y al final del texto de la celda."
-  (let ((alto (/ (- fint init) longr)) ;; el alto de la tabla, cuantas lineas hay
+  (let ((alto (/ (- fint init) longr)) ;; El alto de la tabla, cuantas lineas hay
         (inicue 1) ;; Linea en la que inicia el cuerpo
         espcab     ;; Espacios de la cabecera
-        sumcab     ;; Sumatoria de la cabecera
+        sumcab     ;; Sumatoria de la cabecera, total de espacio recortable.
         espcue     ;; Espacios del cuerpo
-        sumcue     ;; Sumatoria del cuerpo
+        sumcue     ;; Sumatoria del cuerpo, total de espacio recortable.
         sobra)     ;; Diferencia entre el cuerpo y la cabecera
 
     (when cab
@@ -977,10 +982,10 @@ espacios de columna una a la vez."
     (setcdr (nthcdr (1- (length lcolsep)) lcolsep) (cons (1- longr) nil))
 
     (dotimes (i (1- (length lcolsep))) ;; Recorre los separadores - 1
-      (setcar ultrec (mssql-revisar-espacios-m1 ;; Revisa los espacios
+      (setcar ultrec (mssql-revisar-espacios-m1 ;; Revisa los espacios de la columna i
                       init fint longr (1+ (nth i lcolsep))
                       (nth (1+ i) lcolsep) cab ))
-      (setq penrec ultrec) ;; Apunta el penúltimo al último
+      (setq penrec ultrec) ;; Apunta el penúltimo eslabón al último
       (setcdr ultrec (cons nil nil)) ;; Agrega un nuevo cons
       (setq ultrec (cdr ultrec)) ) ;; Apunta el último al
                                    ;; nuevo último cons
@@ -1070,12 +1075,19 @@ espacios de columna una a la vez."
 
 
 (defun mssql-asegurar-inicio (tabla)
-  "Revisa que el inicio de la tabla esté al inicio de una nueva linea de manera que la tabla no quede desalineada."
-  (let ((init (nth 0 tabla))
-        (fint (nth 1 tabla))
-        (llmarcas (nth 5 tabla)) )
+  "Revisa que el inicio de la tabla esté al inicio de una nueva
+linea de manera que la tabla no quede desalineada. A veces una
+tabla puede comenzar en la misma linea en la que se encuentra el
+prompt de SQL y esto causa cierta incomodidad para leerla por
+parte del usuario, pero también para reformatearla."
+  (let ((init (nth 0 tabla)) ;; Inicio de la tabla
+        (fint (nth 1 tabla)) ;; Final de la tabla
+        (llmarcas (nth 5 tabla)) ) ;; Lista de lista de marcas
+    ;; Ponte en el inicio de la tablaj
     (goto-char init)
     (when (not (bolp))
+      ;; Si no estas al inicio de una linea (bol beginning of line)
+      ;; Inserta un fin de linea para que la tabla ahora inicie con la siguiente linea
       (insert "\n")
       (setq init (+ init (length "\n"))
             fint (+ fint (length "\n")) )
@@ -1087,20 +1099,29 @@ espacios de columna una a la vez."
 
 (defun mssql-hackeo-255 (tabla)
   "Esto es un hackeo sucio para un caso especial en el que la tabla
-supuestamente tiene 255 caracteres de ancho, pero en realidad solo la
-cabecera tiene eso, el resto, el cuerpo tiene 254."
-  (let* ((init (nth 0 tabla))
-         (fint (nth 1 tabla))
-         (longr (nth 4 tabla))
-         (alto (/ (- fint init) longr))
-         (cab (nth 2 tabla))
-         (lcolsep (nth 5 tabla))
+supuestamente tiene 255 caracteres de ancho, pero en realidad
+solo la cabecera tiene eso, el resto, el cuerpo tiene 254. Ojo
+hablamos de la longitud del contenido del registro para la
+longitud del registro total habría que sumar 1 por el fin de
+linea."
+  (let* ((init (nth 0 tabla))    ;; Inicio de la tabla
+         (fint (nth 1 tabla))    ;; Final de la tabla
+         (longr (nth 4 tabla))   ;; Longitud de un registro
+         (alto (/ (- fint init) longr)) ;; Alto o sea cantidad de registros de la tabla
+         (cab (nth 2 tabla))     ;; Contiene 't si la tabla tiene cabecera, sino tiene nil
+         (lcolsep (nth 5 tabla)) ;; Lista de las posiciones de separadores de columnas
+         ;; Estas son variables para guardar los 2 caracteres que
+         ;; serán eliminados tanto el caracter como su posición.
          posact poscar1 car1 poscar2 car2
-         (ttabla tabla))
+         (ttabla tabla))         ;; Temporal tabla para re-buscar la tabla.
 
+    ;; Si esta tabla tiene registros de 256 y actulamente tiene un
+    ;; alto de 3 o 2 y es de una sola columna, sin separadores
     (when (and (= longr 256) cab (or (= alto 2) (= alto 3)) (not lcolsep))
-      ;; Eliminale 1 caracteres del final antes del fin de linea a
-      ;; cada una de esas 2 filas
+      ;; Eliminale 1 caracteres del final antes del fin de linea al
+      ;; registro de la cabecera y la división vertical.
+
+      ;; Guarda la posición desde donde estamos comenzando
       (setq posact (point))
 
       (goto-char (1- (+ init (* longr 2))))
@@ -1117,10 +1138,12 @@ cabecera tiene eso, el resto, el cuerpo tiene 254."
       (goto-char posact)
       (setq ttabla (mssql-buscar-tabla))
 
-      ;; Si se obtuvieron más registros que los 2 que teniamos antes,
-      ;; entonces esta es la información correcta, sustituye la
+      ;; Si se obtuvieron más registros que los 2 o 3 que teniamos
+      ;; antes, entonces esta es la información correcta, sustituye la
       ;; información dentro de tabla.
       (unless (> (/ (- (nth 1 ttabla) (nth 0 ttabla)) (nth 4 ttabla)) alto)
+        ;; Sino hubo exito hay que regresar esos dos caracteres que
+        ;; modificamos y continuar con lo que tenemos.
         (goto-char poscar1)
         (insert-char car1)
         (goto-char poscar2)
@@ -1130,12 +1153,12 @@ cabecera tiene eso, el resto, el cuerpo tiene 254."
 
 
 
-;; TODO: Documentar lo mejor posible como funciona esto
-;; TODO: Terminar de hacer los otros métodos para revisar y recortar los espacios.
-;; TODO: Quizas fuera más fácil hacer la reparación completa en memoria y solo hacer en el buffer la parte de capturar la tabla y cuando se vuelve a poner en el buffer.
+;; TODO: Documentar lo mejor posible como funciona esto.
+;; TODO: Terminar de hacer los otros métodos para revisar y recortar los espacios de manera que podamos elegir los más eficientes.
+;; TODO: Quizas fuera más fácil hacer la reparación completa en memoria y solo hacer en el buffer la parte de capturar la tabla y cuando se vuelve a poner en el buffer. Por otro lado me quedo pensando que talvez no hace mucha diferencia porque los buffer de emacs de hecho son memoria, pero me refería a usar variables string y trabajar sobre las tablas en variables string.
 ;; TODO: La región no se está usando realmente, no se está tomando en cuenta.
 ;; TODO: Esta función podría hacer recortes a las columnas para adaptarlas a un ancho de pantalla específico.
-;; TODO: ¿Existe la posibilidad que un buffer sqli llame de forma automática a la función de reformat cada vez que hace un query? investigar. Esta llamada automática, si se logra hacer de una forma confiable ahorraría el trabajo de tener que llamar la función de reformatear la tabla que cuando estoy trabajando en un buffer sqli hago casi siempre después de una consulta.
+;; TODO: ¿Existe la posibilidad que un buffer sqli llame de forma automática a la función de reformat cada vez que hace un query o cada vez que hay un resultado en forma de tabla? investigar. Esta llamada automática, si se logra hacer de una forma confiable ahorraría el trabajo de tener que llamar la función de reformatear la tabla que cuando estoy trabajando en un buffer sqli hago casi siempre después de una consulta.
 ;; TODO: A veces en algunas columnas de algunas tablas se usa el tipo de dato datetime para almacenar una fecha, la parte de la hora queda sin uso, o sea siempre mostrando 00:00:00.000. Sería bueno que en estos casos en que todos los valores de horas de una columna datetime estuvieran en 0, eliminar esos 0 que no aportan ninguna información. Ver en los casos de prueba la "Prueba tabla grande 2".
 ;; TODO: En ese mismo sentido una columna con valores numéricos que muestra siempre 0 ceros a la derecha del punto que tampoco aportan información, se podría recortar para que no muestre estos ceros. Ver el caso de prueba Prueba tabla grande en la columna salario.
 ;; TODO: No hay ningún caso que use el trunque, incluir un par de casos y hacer que funcionen bien.
@@ -1160,7 +1183,10 @@ Carlos Alberto|Marcos Zapata  |30500.00|23-03-1983|Maestro
 Simona Bueno  |Jimenez Garcia | 9000.00|05-12-1958|Faenaria
 Federico Angel|Iglesias Acosta|65000.00|07-01-1994|Director
 
-Para que esta función trabaje se recomienda que se usen las siguientes opciones para osql (setq sql-ms-options (quote (\"-w\" \"300\" \"-s\" \"|\" \"-n\"))
+Para que esta función trabaje se recomienda que se usen las
+siguientes opciones para osql:
+
+    (setq sql-ms-options (quote (\"-w\" \"300\" \"-s\" \"|\" \"-n\"))
 
 "
   (interactive
@@ -1170,6 +1196,7 @@ Para que esta función trabaje se recomienda que se usen las siguientes opciones
   (save-excursion
     (let (tabla)
 
+      ;; Trata de encontrar una tabla buscando hacia atras.
       (when (setq tabla (mssql-buscar-tabla))
         ;; La variable tabla es una lista
         ;; 1. el primer elemento es la pocision de inicio de la tabla
@@ -1191,6 +1218,8 @@ Para que esta función trabaje se recomienda que se usen las siguientes opciones
         ;; puede recortar significa que ninguna fila tiene texto en
         ;; ese espacio.
 
+        ;; Algunas tablas tienen condiciones especiales, este hackeo
+        ;; las modifica un poco para que se adapten a la norma.
         (setq tabla (mssql-hackeo-255 tabla))
 
         ;; Asegura que la tabla comience al inicio de una linea.
