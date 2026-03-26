@@ -792,3 +792,31 @@ INSERT INTO [Consuinformacion].[Datascargapersonasueldoespecial]
 
 <cursor>
 
+======================================================================
+Prueba Celdas en blanco
+(mssql-reformat-table)
+----prueba----
+select top 3 * from camaradas
+go
+1> 2> 3> 4> nombre               |apellido               |sueldo       |nacimiento     |puesto          
+---------------------|-----------------------|-------------|---------------|----------------
+                     |Marcos Zapata          |     30500.00|23-03-1983     |                
+Simona Bueno         |                       |      9000.00|               |Faenaria        
+Federico Angel       |Iglesias Acosta        |             |07-01-1994     |Director        
+
+(3 rows affected)
+<cursor>
+
+----resultado----
+select top 3 * from camaradas
+go
+1> 2> 3> 4> 
+nombre        |apellido       |sueldo  |nacimiento|puesto
+--------------|---------------|--------|----------|--------
+              |Marcos Zapata  |30500.00|23-03-1983|
+Simona Bueno  |               | 9000.00|          |Faenaria
+Federico Angel|Iglesias Acosta|        |07-01-1994|Director
+
+(3 rows affected)
+<cursor>
+
