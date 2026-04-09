@@ -895,12 +895,12 @@ izquierda y derecha de la columna."
 
 
 
-(defun mssql-revisar-espacios-m1 (init  ;; Inicio de la tabla
-                                  fint  ;; Fin de la tabla
-                                  longr ;; Longitud del registro
-                                  inic  ;; Inicio de la columna
-                                  finc  ;; Fin de la columna
-                                  cab)  ;; True si tiene cabecera
+(defun mssql-revisar-espacios-col (init  ;; Inicio de la tabla
+                                   fint  ;; Fin de la tabla
+                                   longr ;; Longitud del registro
+                                   inic  ;; Inicio de la columna
+                                   finc  ;; Fin de la columna
+                                   cab)  ;; True si tiene cabecera
   "Revisa los espacios de una columna usando el método 1, recorriendo valor
 por valor usando una expresión regular para saber que espacio hay al
 inicio y al final del texto de la celda."
@@ -944,9 +944,25 @@ inicio y al final del texto de la celda."
     ;; Retorna la lista con los 2 espacios del cuerpo, modificados o no
     espcue ))
 
+(defun mssql-revisar-espacios-bloque-m2 (init   ;; Inicio de la tabla
+                                         fint   ;; Fin de la tabla
+                                         longr  ;; Longitud del registro
+                                         inic   ;; Inicio de la columna
+                                         finc   ;; Fin de la columna
+                                         desde  ;; Linea inicial del bloque
+                                         hasta) ;; Linea limite bloque no incluida
+  ""
+  
+
+    )
 
 
-(defun mssql-revisar-espacios-m2 (inic finc inif finf)
+(defun mssql-revisar-espacios-m2 (init
+                                  fint
+                                  longr
+                                  inic
+                                  finc
+                                  cab)
   "Revisa los espacios de una columna usando el método 2, revisando las
 columnas de caracteres una a una para detenerse cuando encuentre texto
 que no esté en blanco."
@@ -991,7 +1007,7 @@ espacios de columna una a la vez."
     (setcdr (nthcdr (1- (length lcolsep)) lcolsep) (cons (1- longr) nil))
 
     (dotimes (i (1- (length lcolsep))) ;; Recorre los separadores - 1
-      (setcar ultrec (mssql-revisar-espacios-m1 ;; Revisa los espacios de la columna i
+      (setcar ultrec (mssql-revisar-espacios-col ;; Revisa los espacios de la columna i
                       init fint longr (1+ (nth i lcolsep))
                       (nth (1+ i) lcolsep) cab ))
       (setq penrec ultrec) ;; Apunta el penúltimo eslabón al último
