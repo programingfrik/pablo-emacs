@@ -877,11 +877,10 @@ izquierda y derecha de la columna."
 
       ;; Hay casos en los que la celda completa está en blanco, pero
       ;; el espacio completo se toma al inicio o al final, entonces
-      ;; queda el otro lado completamente en vacio, en 0, como si no
-      ;; hubiera espacio, esto provoca que el algoritmo entienda
-      ;; erroneamente que no se puede recortar nada de ese lado, por
-      ;; eso este método ignora las celdas completamente en blanco,
-      ;; que de todas formas no afectaría los espacios mínimos.
+      ;; queda el otro lado completamente vacio, en 0, como si no
+      ;; hubiera espacio para recortar, por eso este método ignora las
+      ;; celdas completamente en blanco, que de todas formas no
+      ;; afectaría los espacios mínimos.
       (when (< (+ espini espfin) (- finc inic))
         ;; si la suma de los espacios es menor que el tamaño de la
         ;; celda, toma en cuenta esta celda
@@ -892,6 +891,36 @@ izquierda y derecha de la columna."
 
       (setq linea (1+ linea)) )
     (list meini mefin) ))
+
+
+
+(defun mssql-revisar-espacios-bloque-m2 (init    ;; Inicio de la tabla
+                                         fint    ;; Fin de la tabla
+                                         longr   ;; Longitud del registro
+                                         inic    ;; Inicio de la columna
+                                         finc    ;; Fin de la columna
+                                         desde   ;; Linea inicial del bloque
+                                         hasta ) ;; Linea limite bloque no incluida
+  "Revisa los espacios de una columna usando el método 2, revisando
+las columnas de caracteres una a una para detenerse cuando
+encuentre texto que no esté en blanco."
+
+
+    )
+
+
+
+(defun mssql-revisar-espacios-bloque-m3 (init    ;; Inicio de la tabla
+                                         fint    ;; Fin de la tabla
+                                         longr   ;; Longitud del registro
+                                         inic    ;; Inicio de la columna
+                                         desde   ;; Linea inicial del bloque
+                                         hasta ) ;; Linea limite bloque no incluida
+  "Revisa los espacios de una columna usando el método 3, tratando de hacer
+verificaciones de las columnas de caracteres de forma eficiente, dando
+brincos, tratando de adivinar, de forma que no tenga que verificar todas
+las columnas."
+  )
 
 
 
@@ -943,44 +972,6 @@ inicio y al final del texto de la celda."
           (setq sobra 0) )))
     ;; Retorna la lista con los 2 espacios del cuerpo, modificados o no
     espcue ))
-
-(defun mssql-revisar-espacios-bloque-m2 (init   ;; Inicio de la tabla
-                                         fint   ;; Fin de la tabla
-                                         longr  ;; Longitud del registro
-                                         inic   ;; Inicio de la columna
-                                         finc   ;; Fin de la columna
-                                         desde  ;; Linea inicial del bloque
-                                         hasta) ;; Linea limite bloque no incluida
-  ""
-  
-
-    )
-
-
-(defun mssql-revisar-espacios-m2 (init
-                                  fint
-                                  longr
-                                  inic
-                                  finc
-                                  cab)
-  "Revisa los espacios de una columna usando el método 2, revisando las
-columnas de caracteres una a una para detenerse cuando encuentre texto
-que no esté en blanco."
-  (let (lespr cespt espizqt flancoiz flancode colt cole)
-
-    (while (not (encflanco))
-
-      )
-    ))
-
-
-
-(defun mssql-revisar-espacios-m3 (tabla)
-  "Revisa los espacios de una columna usando el método 3, tratando de hacer
-verificaciones de las columnas de caracteres de forma eficiente, dando
-brincos, tratando de adivinar, de forma que no tenga que verificar todas
-las columnas."
-  )
 
 
 
