@@ -1,8 +1,12 @@
 
 (defun escribir-fecha-hora ()
-  "Una función para escribir la fecha y hora acutal en el punto actual.
+  "Una función para escribir la fecha y hora actual en el punto actual.
 
-La función escribe la fecha y la hora en formato aaaa-mm-dd hh:MM PP. Donde \"a\" son dígitos del año, \"m\" son dígitos del mes, \"d\" son dígitos del día, \"h\" son dígitos de la hora, \"M\" son dígitos de los minutos y \"P\" son dos letras que forma AM o PM según el caso. La hora se escribe en formato de 12 horas."
+La función escribe la fecha y la hora en formato aaaa-mm-dd hh:MM
+PP. Donde \"a\" son dígitos del año, \"m\" son dígitos del mes, \"d\"
+son dígitos del día, \"h\" son dígitos de la hora, \"M\" son dígitos de
+los minutos y \"P\" son dos letras que forma AM o PM según el caso. La
+hora se escribe en formato de 12 horas."
   (interactive)
   (let* ((m (decode-time (current-time) nil))
          (h24 (nth 2 m))
@@ -319,26 +323,19 @@ This function takes point to the definition of the CSharp function in the curren
     )
   )
 
-(defun find-nearest-file (suffix dir depth)
-  "Finds the nearest file in dir herarchy that has the given suffix"
-  (let ((cont 0)
-        posibles
-        file
-        (dir-actual dir)
-        project)
-    (while (and (not project) (> (- depth cont) 0))
-      (setq posibles (directory-files dir-actual t (concat "^.+\\" suffix "$")))
-      (while (and (not project) posibles)
-        (setq file (car posibles))
-        (when (string-suffix-p suffix file t)
-          (setq project file))
-        (setq posibles (cdr posibles))
-        )
-      (setq cont (1+ cont))
-      (setq dir-actual (parent-directory dir-actual))
-      )
-    project
-    ) )
+(defun find-closest (pattern dir maxd)
+  "Finds the closest file in the dir herarchy that has a name that match the given pattern."
+  (let ((crd 0)       ;; crd = current relative depth
+        posproe       ;; posproe = possible project element
+        (curdir dir)  ;; curdir = current directory
+        projecte )    ;; project element
+    (while (and (not projecte) (< crd maxd))
+      (setq posproe (directory-files curdir 't pattern))
+      (when posproe
+        (setq projecte (car posproe)) )
+      (setq crd (1+ crd)
+            curdir (parent-directory curdir) ))
+    projecte ))
 
 (defun get-vsproject-here (this-file only-sln depth)
   "Gets the main vsproject file for a given source file."
@@ -351,32 +348,61 @@ This function takes point to the definition of the CSharp function in the curren
     )
   )
 
-(defvar pablo-construirvs-ddepth
+(defvar pablo-compile-maxd
   4
   "La profundidad máxima a la que va a tratar de llegar la función find-nearest-file cuando este buscando el fichero del proyecto.")
 
-(defvar pablo-construirvs-path
+(defvar pablo-buildvs-path
   "/cygdrive/e/pablo/comun/codigo/lang/bat/construirvs2019.bat"
   "La ruta del bat que pone el ambiente y ejecuta a msbuild en ese ambiente.")
 
-(defun compile-vsproject-here ()
-  "Compiles the project of the current source.
-This function searches for the .net project nearest to the
-current path and puts it on a command to build that project."
+(defun get-projecte (this-file only-sln depth)
+  "Gets the main project element for a given source file."
+  (let ((dir-actual (parent-directory this-file))
+        projecte)
+    (setq projecte (or (find-closest "^.+\\.sln$" dir-actual depth)
+                       (and (not only-sln)
+                            (or (find-closest "^.+\\.csproj$" dir-actual depth)
+                                (find-closest "^prepare\\.py$" dir-actual depth) ))))
+
+    ;; (setq projecte (find-nearest-file "^.+\\.sln$" dir-actual depth))
+    ;; (when (and (not projecte) (not only-sln))
+    ;;   (setq projecte (find-nearest-file "^.+\\.csproj$" dir-actual depth)) )
+    ;; (when (and (not projecte) (not only-sln))
+    ;;   (setq projecte (find-nearest-file "^prepare\\.py$" dir-actual depth)) )
+    ;; projecte
+
+    ))
+
+(defun pablo-compile ()
+  "This function tries to guess what command can be used to build the
+current project, it first tries to find a \".sln\" or a \".csproj\" file
+on some of the parent directories, which if found, would mean that this
+is a .net project, and that we can use dotnet to build it, if it isn't
+found then it tries to find a \"prepare.py\" file wich means this is a
+pablo project and use that to build it. The main thing with building the
+project is not only what command to call but also the path to the
+element it needs to build the project, this function tries to guess the
+path to that element."
   (interactive)
-  (progn
-    ;; If compile-command is empty or has its standard value, try to create a compile command for the vs-project.
-    (if (or (equal compile-command "")
-            (equal compile-command (eval (car (get 'compile-command 'standard-value)))))
-        (let ((project (get-vsproject-here buffer-file-name 'nil pablo-construirvs-ddepth)) )
-          (when (not project)
-            (setq project "(no project.csproj or project.sln found)"))
-          (setq compile-command (concat pablo-construirvs-path " /p:Configuration=Debug `cygpath -wa \"" project "\"`"))
-          ))
-    ;; any way, call the compile command.
-    (call-interactively 'compile)
-    )
-  )
+  (let ((scc (eval (car (get 'compile-command 'standard-value)))) ;; scc = standard compile command
+        (orv compile-command) ;; orv = original value
+        projecte) ;; projecte = project element
+    (when (or (equal compile-command "")
+              (equal compile-command scc))
+      (setq projecte (get-projecte buffer-file-name 'nil pablo-compile-maxd))
+      (if projecte
+          (if (or (string-suffix-p ".sln" projecte 't)
+                  (string-suffix-p ".csproj" projecte 't) )
+              (setq compile-command
+                    (concat pablo-buildvs-path
+                            " /p:Configuration=Debug `cygpath -wa \""
+                            projecte "\"`" ))
+            (setq compile-command (concat "python " projecte)) )
+        (message "No project.sln or project.csproj or prepare.py was found")
+        (setq compile-command orv) )))
+  ;; any way, call the compile command.
+  (call-interactively 'compile) )
 
 (defun start-omnisharp-here (vs-project)
   "Starts omnisharp for the project of the current source.
