@@ -331,13 +331,12 @@ This function takes point to the definition of the CSharp function in the curren
             curdir (parent-directory curdir) ))
     projecte ))
 
-(defun get-vsproject-here (this-file only-sln depth)
+(defun get-vsproject-here (current-dir only-sln depth)
   "Gets the main vsproject file for a given source file."
-  (let ((dir-actual (parent-directory this-file))
-        project )
-    (setq project (find-nearest-file ".sln" dir-actual depth))
+  (let (project)
+    (setq project (find-nearest-file ".sln" current-dir depth))
     (if (and (not project) (not only-sln))
-        (setq project (find-nearest-file ".csproj" dir-actual depth)) )
+        (setq project (find-nearest-file ".csproj" current-dir depth)) )
     project
     )
   )
@@ -350,23 +349,21 @@ This function takes point to the definition of the CSharp function in the curren
   "/cygdrive/e/pablo/comun/codigo/lang/bat/construirvs2019.bat"
   "La ruta del bat que pone el ambiente y ejecuta a msbuild en ese ambiente.")
 
-(defun get-projecte (this-file only-sln depth)
+(defun get-projecte (current-dir only-sln depth)
   "Gets the main project element for a given source file."
-  (let ((dir-actual (parent-directory this-file))
-        projecte)
-    (setq projecte (or (find-closest "^.+\\.sln$" dir-actual depth)
-                       (and (not only-sln)
-                            (or (find-closest "^.+\\.csproj$" dir-actual depth)
-                                (find-closest "^prepare\\.py$" dir-actual depth) ))))
+  (or (find-closest "^.+\\.sln$" current-dir depth)
+      (and (not only-sln)
+           (or (find-closest "^.+\\.csproj$" current-dir depth)
+               (find-closest "^prepare\\.py$" current-dir depth) )))
 
-    ;; (setq projecte (find-nearest-file "^.+\\.sln$" dir-actual depth))
+    ;; (setq projecte (find-nearest-file "^.+\\.sln$" current-dir depth))
     ;; (when (and (not projecte) (not only-sln))
-    ;;   (setq projecte (find-nearest-file "^.+\\.csproj$" dir-actual depth)) )
+    ;;   (setq projecte (find-nearest-file "^.+\\.csproj$" current-dir depth)) )
     ;; (when (and (not projecte) (not only-sln))
-    ;;   (setq projecte (find-nearest-file "^prepare\\.py$" dir-actual depth)) )
+    ;;   (setq projecte (find-nearest-file "^prepare\\.py$" current-dir depth)) )
     ;; projecte
 
-    ))
+  )
 
 (defun pablo-compile ()
   "This function tries to guess what command can be used to build the
@@ -384,7 +381,7 @@ path to that element."
         projecte) ;; projecte = project element
     (when (or (equal compile-command "")
               (equal compile-command scc))
-      (setq projecte (get-projecte buffer-file-name 'nil pablo-compile-maxd))
+      (setq projecte (get-projecte default-directory 'nil pablo-compile-maxd))
       (if projecte
           (if (or (string-suffix-p ".sln" projecte 't)
                   (string-suffix-p ".csproj" projecte 't) )
@@ -405,7 +402,7 @@ This function, deactivates the \"http_proxy\" variable if it is set, stops the o
    (list
     (progn
       (unless (and (boundp 'omnisharp-vs-project) omnisharp-vs-project)
-        (setq omnisharp-vs-project (get-vsproject-here buffer-file-name 't pablo-construirvs-ddepth))
+        (setq omnisharp-vs-project (get-vsproject-here default-directory 't pablo-construirvs-ddepth))
         )
       (setq omnisharp-vs-project
             (read-file-name "Start OmniSharpServer.exe for solution: "
