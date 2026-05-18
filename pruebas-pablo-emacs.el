@@ -223,3 +223,22 @@
     (kill-buffer tbresultado) )
   ;; Fin
   )
+
+(defun test-parent-directory ()
+  "A function to test that parent-directory is doing its job."
+  (interactive)
+  ;;             input         .   expected-output
+  (let ((tests (("d:/pablo/pollo" . "d:/pablo")
+                ("d:/pablo/" . "d:/")
+                ("d:/pablo" . "d:/")
+                ("/data/pablo/" . "/data")
+                ("/data/" . "/")
+                ("/data" . "/")
+                ("d:/" . nil)
+                ("/" . nil)
+                ("c:\\juana\\carolina" . "c:\\juana")
+                ("c:\\juana\\carolina\\" . "c:\\juana")
+                ("c:\\juana" . "c:\\")
+                ("c:\\" . nil) )))
+
+  ))
