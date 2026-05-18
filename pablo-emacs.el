@@ -300,21 +300,15 @@ This function takes point to the definition of the CSharp function in the curren
 
 (defun join-string-list (string-list separator)
   "Concats each of the strings in string-list putting separator between them."
-  (let ((result nil))
-    (setq result (car string-list))
-    (setq string-list (cdr string-list))
-    (dolist (fichero string-list result)
-      (setq result (concat result separator fichero)) )
-    )
-  )
+  (seq-reduce (lambda (a b) (concat a separator b))
+              (cdr string-list)
+              (car string-list) ))
 
 (defun parent-directory (dir)
   "Returns the parent directory of dir"
-  (let ((separator (cond ((string-match-p "/" dir)
-                          "/")
-                         ((string-match-p "\\\\" dir)
-                          "\\") ))
-        (adress nil))
+  (let ((separator (cond ((string-match-p "/" dir) "/")
+                         ((string-match-p "\\\\" dir) "\\") ))
+        (adress nil) )
     (setq adress (cdr (reverse (split-string dir (concat "\\" separator) t))))
     (setq adress (reverse adress))
     (if (string-prefix-p separator dir)
