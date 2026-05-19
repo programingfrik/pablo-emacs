@@ -226,19 +226,31 @@
 
 (defun test-parent-directory ()
   "A function to test that parent-directory is doing its job."
-  (interactive)
-  ;;             input         .   expected-output
-  (let ((tests (("d:/pablo/pollo" . "d:/pablo")
-                ("d:/pablo/" . "d:/")
-                ("d:/pablo" . "d:/")
-                ("/data/pablo/" . "/data")
-                ("/data/" . "/")
-                ("/data" . "/")
-                ("d:/" . nil)
-                ("/" . nil)
-                ("c:\\juana\\carolina" . "c:\\juana")
-                ("c:\\juana\\carolina\\" . "c:\\juana")
-                ("c:\\juana" . "c:\\")
-                ("c:\\" . nil) )))
-
-  ))
+  (interactive) ;; input          .  expected-output
+  (let ((tests '(("d:/pablo/pollo" . "d:/pablo")
+                 ("d:/pablo/" . "d:/")
+                 ("d:/pablo" . "d:/")
+                 ("/data/pablo/" . "/data")
+                 ("/data/" . "/")
+                 ("/data" . "/")
+                 ("d:/" . nil)
+                 ("/" . nil)
+                 ("c:\\juana\\carolina" . "c:\\juana")
+                 ("c:\\juana\\carolina\\" . "c:\\juana")
+                 ("c:\\juana" . "c:\\")
+                 ("c:\\" . nil) ))
+        pdresult
+        (tequa 0)
+        (wrqua 0) )
+    (dolist (test tests)
+      (setq pdresult (parent-directory (car test)))
+      (message "Parent directory of \"%s\" is \"%s\"? parent-dictory says is \"%s\". "
+               (car test) (cdr test) pdresult )
+      (when (not (string= pdresult (cdr test)))
+        (message "FAIL: parent-directory function failed, \"%s\" was expected, instead got \"%s\""
+                 (cdr test) pdresult)
+        (setq wrqua (1+ wrqua)) )
+      (setq tequa (1+ tequa)) )
+    (message "Number of tests: %d\nRight tests: %d\nWrong tests: %d"
+             tequa (- tequa wrqua) wrqua )
+    ))
