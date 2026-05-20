@@ -305,7 +305,7 @@ This function takes point to the definition of the CSharp function in the curren
               (car string-list) ))
 
 (defun parent-directory (dir)
-  "Returns the parent directory of dir"
+  "Returns the parent directory of dir. This functions expects dir to be an absolute path, but it should work regardless of the os platform."
   (let* ((separator
           (cond ((string-match-p "/" dir) "/")
                 ((string-match-p "\\\\" dir) "\\") ))
@@ -315,16 +315,14 @@ This function takes point to the definition of the CSharp function in the curren
          (drive "") )
     (when dir
       (when (and (> (length dir) 1)
-                 (string-match-p
-                  "^[a-zA-Z]:$"
-                  (substring dir 0 2) ))
+                 (string-match-p "^[a-zA-Z]:$"
+                                 (substring dir 0 2) ))
         (setq drive (substring dir 0 2)
               dir (substring dir 2) ))
       (setq pparts (split-string dir septr-patt))
-      (setq pparts (reverse pparts))
-      (when (string-equal (car pparts) "")
-        (setq pparts (cdr pparts)) )
-      (setq pparts (reverse (cdr pparts)))
+      (when (string-equal (car (last pparts)) "")
+        (setq pparts (nbutlast pparts)) )
+      (setq pparts (nbutlast pparts))
       (cond ((= (length pparts) 1)
              (setq pparts (cons drive pparts)) )
             ((> (length pparts) 1)
