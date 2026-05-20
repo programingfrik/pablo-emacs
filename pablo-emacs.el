@@ -306,11 +306,13 @@ This function takes point to the definition of the CSharp function in the curren
 
 (defun parent-directory (dir)
   "Returns the parent directory of dir"
-  (let ((separator
-         (cond ((string-match-p "/" dir) "/")
-               ((string-match-p "\\\\" dir) "\\\\") ))
-        pparts
-        (drive "") )
+  (let* ((separator
+          (cond ((string-match-p "/" dir) "/")
+                ((string-match-p "\\\\" dir) "\\") ))
+         (septr-patt (if (string-equal separator "\\")
+                         "\\\\" separator))
+         pparts
+         (drive "") )
     (when dir
       (when (and (> (length dir) 1)
                  (string-match-p
@@ -318,7 +320,7 @@ This function takes point to the definition of the CSharp function in the curren
                   (substring dir 0 2) ))
         (setq drive (substring dir 0 2)
               dir (substring dir 2) ))
-      (setq pparts (split-string dir separator))
+      (setq pparts (split-string dir septr-patt))
       (setq pparts (reverse pparts))
       (when (string-equal (car pparts) "")
         (setq pparts (cdr pparts)) )
