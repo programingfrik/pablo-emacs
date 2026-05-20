@@ -242,6 +242,7 @@
         pdresult
         (tequa 0)
         (wrqua 0) )
+    (message "*** Testing parent-directory function")
     (dolist (test tests)
       (setq pdresult (parent-directory (car test)))
       (message "Parent directory of \"%s\" is \"%s\"? parent-dictory says is \"%s\". "

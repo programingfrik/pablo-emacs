@@ -306,16 +306,30 @@ This function takes point to the definition of the CSharp function in the curren
 
 (defun parent-directory (dir)
   "Returns the parent directory of dir"
-  (let ((separator (cond ((string-match-p "/" dir) "/")
-                         ((string-match-p "\\\\" dir) "\\") ))
-        (adress nil) )
-    (setq adress (cdr (reverse (split-string dir (concat "\\" separator) t))))
-    (setq adress (reverse adress))
-    (if (string-prefix-p separator dir)
-        (concat separator (join-string-list adress separator))
-      (join-string-list adress separator) )
-    )
-  )
+  (let ((separator
+         (cond ((string-match-p "/" dir) "/")
+               ((string-match-p "\\\\" dir) "\\\\") ))
+        pparts
+        (drive "") )
+    (when dir
+      (when (and (> (length dir) 1)
+                 (string-match-p
+                  "^[a-zA-Z]:$"
+                  (substring dir 0 2) ))
+        (setq drive (substring dir 0 2)
+              dir (substring dir 2) ))
+      (setq pparts (split-string dir separator))
+      (setq pparts (reverse pparts))
+      (when (string-equal (car pparts) "")
+        (setq pparts (cdr pparts)) )
+      (setq pparts (reverse (cdr pparts)))
+      (cond ((= (length pparts) 1)
+             (setq pparts (cons drive pparts)) )
+            ((> (length pparts) 1)
+             (setcar pparts (concat drive (car pparts))) ))
+      (when pparts
+        (join-string-list pparts separator) )
+      )))
 
 (defun find-closest (pattern dir maxd)
   "Finds the closest file in the dir herarchy that has a name that match the given pattern."
