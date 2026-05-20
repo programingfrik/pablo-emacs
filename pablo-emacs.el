@@ -337,7 +337,7 @@ This function takes point to the definition of the CSharp function in the curren
         posproe       ;; posproe = possible project element
         (curdir dir)  ;; curdir = current directory
         projecte )    ;; project element
-    (while (and (not projecte) (< crd maxd))
+    (while (and curdir (not projecte) (< crd maxd))
       (setq posproe (directory-files curdir 't pattern))
       (when posproe
         (setq projecte (car posproe)) )
