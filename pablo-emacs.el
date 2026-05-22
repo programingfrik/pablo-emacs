@@ -298,106 +298,23 @@ This function takes point to the definition of the CSharp function in the curren
     )
   )
 
-(defun join-string-list (string-list separator)
-  "Concats each of the strings in string-list putting separator between them."
-  (seq-reduce (lambda (a b) (concat a separator b))
-              (cdr string-list)
-              (car string-list) ))
-
-(defun parent-directory (dir)
-  "Returns the parent directory of dir. This functions expects dir to be an absolute path, but it should work regardless of the os platform."
-  (let* ((separator
-          (cond ((string-match-p "/" dir) "/")
-                ((string-match-p "\\\\" dir) "\\") ))
-         (septr-patt (if (string-equal separator "\\")
-                         "\\\\" separator))
-         pparts
-         (drive "") )
-    (when dir
-      (when (and (> (length dir) 1)
-                 (string-match-p "^[a-zA-Z]:$"
-                                 (substring dir 0 2) ))
-        (setq drive (substring dir 0 2)
-              dir (substring dir 2) ))
-      (setq pparts (split-string dir septr-patt))
-      (when (string-equal (car (last pparts)) "")
-        (setq pparts (nbutlast pparts)) )
-      (setq pparts (nbutlast pparts))
-      (cond ((= (length pparts) 1)
-             (setq pparts (cons drive pparts)) )
-            ((> (length pparts) 1)
-             (setcar pparts (concat drive (car pparts))) ))
-      (when pparts
-        (join-string-list pparts separator) )
-      )))
-
-(defun find-closest (pattern dir maxd)
-  "Finds the closest file in the dir herarchy that has a name that match the given pattern."
-  (let ((crd 0)       ;; crd = current relative depth
-        posproe       ;; posproe = possible project element
-        (curdir dir)  ;; curdir = current directory
-        projecte )    ;; project element
-    (while (and curdir (not projecte) (< crd maxd))
-      (setq posproe (directory-files curdir 't pattern))
-      (when posproe
-        (setq projecte (car posproe)) )
-      (setq crd (1+ crd)
-            curdir (parent-directory curdir) ))
-    projecte ))
-
-(defun get-vsproject-here (current-dir only-sln depth)
-  "Gets the main vsproject file for a given source file."
-  (let (project)
-    (setq project (find-nearest-file ".sln" current-dir depth))
-    (if (and (not project) (not only-sln))
-        (setq project (find-nearest-file ".csproj" current-dir depth)) )
-    project
-    )
-  )
-
-(defvar pablo-compile-maxd
-  4
-  "La profundidad máxima a la que va a tratar de llegar la función find-nearest-file cuando este buscando el fichero del proyecto.")
-
 (defvar pablo-buildvs-path
   "/cygdrive/e/pablo/comun/codigo/lang/bat/construirvs2019.bat"
   "La ruta del bat que pone el ambiente y ejecuta a msbuild en ese ambiente.")
 
-(defun get-projecte (current-dir only-sln depth)
-  "Gets the main project element for a given source file."
-  (or (find-closest "^.+\\.sln$" current-dir depth)
-      (and (not only-sln)
-           (or (find-closest "^.+\\.csproj$" current-dir depth)
-               (find-closest "^prepare\\.py$" current-dir depth) ))))
-
-;; (defun get-projecte-2 (current-dir only-sln)
-;;   "Gets the main project element for a given source directory."
-;;   (let ((patsln "^.+\\.sln$")
-;;         (patprj "^.+\\.csproj$")
-;;         (patpreppy "^prepare\\.py$")
-;;         dire posproe )
-;;     (setq dire
-;;           (or (locate-dominating-file
-;;                current-dir
-;;                (lambda (d) (directory-files d 't patsln) ))
-;;               (and (not only-sln)
-;;                    (or (locate-dominating-file
-;;                         current-dir
-;;                         (lambda (d) (directory-files d 't patprj) ))
-;;                        (locate-dominating-file
-;;                         current-dir
-;;                         (lambda (d) (directory-files d 't patpreppy) ))
-;;                        ))))
-;;     (when dire
-;;       (setq posproe))
-;;
-;;     (setq dire (locate-dominating-file
-;;                 current-dir
-;;                 (lambda (d) (directory-files d 't patsln) )))
-;;     (when dire
-;;       (setq ))
-;;
-;;     ))
+(defun get-projecte (current-dir patts)
+  "Gets the main project element for a given source directory."
+  (let* ((patsln "^.+\\.sln$")
+         (count 0)
+         posproe )
+    (while (and (not posproe) (< count (length patts)))
+      (setq dire (locate-dominating-file
+                  current-dir
+                  (lambda (d) (directory-files d 't (nth count patts))) )
+            posproe (when dire
+                      (car (directory-files dire 't (nth count patts))) )
+            count (1+ count) ))
+    posproe ))
 
 (defun pablo-compile ()
   "This function tries to guess what command can be used to build the
@@ -417,7 +334,9 @@ path to that element."
               (equal compile-command scc))
       (setq projecte (get-projecte
                       (expand-file-name default-directory)
-                      'nil pablo-compile-maxd))
+                      (list "^.+\\.sln$"
+                            "^.+\\.csproj$"
+                            "^prepare\\.py$" )))
       (if projecte
           (if (or (string-suffix-p ".sln" projecte 't)
                   (string-suffix-p ".csproj" projecte 't) )
@@ -438,8 +357,9 @@ This function, deactivates the \"http_proxy\" variable if it is set, stops the o
    (list
     (progn
       (unless (and (boundp 'omnisharp-vs-project) omnisharp-vs-project)
-        (setq omnisharp-vs-project (get-vsproject-here default-directory 't pablo-construirvs-ddepth))
-        )
+        (setq omnisharp-vs-project (get-projecte
+                                    (expand-file-name default-directory)
+                                    (list "^.+\\.sln$" "^.+\\.csproj$") )))
       (setq omnisharp-vs-project
             (read-file-name "Start OmniSharpServer.exe for solution: "
                             nil omnisharp-vs-project t nil 'file-readable-p))
