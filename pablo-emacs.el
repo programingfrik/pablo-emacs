@@ -368,16 +368,36 @@ This function takes point to the definition of the CSharp function in the curren
   (or (find-closest "^.+\\.sln$" current-dir depth)
       (and (not only-sln)
            (or (find-closest "^.+\\.csproj$" current-dir depth)
-               (find-closest "^prepare\\.py$" current-dir depth) )))
+               (find-closest "^prepare\\.py$" current-dir depth) ))))
 
-    ;; (setq projecte (find-nearest-file "^.+\\.sln$" current-dir depth))
-    ;; (when (and (not projecte) (not only-sln))
-    ;;   (setq projecte (find-nearest-file "^.+\\.csproj$" current-dir depth)) )
-    ;; (when (and (not projecte) (not only-sln))
-    ;;   (setq projecte (find-nearest-file "^prepare\\.py$" current-dir depth)) )
-    ;; projecte
-
-  )
+;; (defun get-projecte-2 (current-dir only-sln)
+;;   "Gets the main project element for a given source directory."
+;;   (let ((patsln "^.+\\.sln$")
+;;         (patprj "^.+\\.csproj$")
+;;         (patpreppy "^prepare\\.py$")
+;;         dire posproe )
+;;     (setq dire
+;;           (or (locate-dominating-file
+;;                current-dir
+;;                (lambda (d) (directory-files d 't patsln) ))
+;;               (and (not only-sln)
+;;                    (or (locate-dominating-file
+;;                         current-dir
+;;                         (lambda (d) (directory-files d 't patprj) ))
+;;                        (locate-dominating-file
+;;                         current-dir
+;;                         (lambda (d) (directory-files d 't patpreppy) ))
+;;                        ))))
+;;     (when dire
+;;       (setq posproe))
+;;
+;;     (setq dire (locate-dominating-file
+;;                 current-dir
+;;                 (lambda (d) (directory-files d 't patsln) )))
+;;     (when dire
+;;       (setq ))
+;;
+;;     ))
 
 (defun pablo-compile ()
   "This function tries to guess what command can be used to build the
@@ -395,7 +415,9 @@ path to that element."
         projecte) ;; projecte = project element
     (when (or (equal compile-command "")
               (equal compile-command scc))
-      (setq projecte (get-projecte default-directory 'nil pablo-compile-maxd))
+      (setq projecte (get-projecte
+                      (expand-file-name default-directory)
+                      'nil pablo-compile-maxd))
       (if projecte
           (if (or (string-suffix-p ".sln" projecte 't)
                   (string-suffix-p ".csproj" projecte 't) )
