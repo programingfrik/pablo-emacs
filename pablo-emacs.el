@@ -338,13 +338,15 @@ path to that element."
                             "^.+\\.csproj$"
                             "^prepare\\.py$" )))
       (if projecte
-          (if (or (string-suffix-p ".sln" projecte 't)
-                  (string-suffix-p ".csproj" projecte 't) )
-              (setq compile-command
-                    (concat pablo-buildvs-path
-                            " /p:Configuration=Debug `cygpath -wa \""
-                            projecte "\"`" ))
-            (setq compile-command (concat "python " projecte)) )
+          (progn
+            (when (equal 'windows-nt system-type)
+              (setq projecte (string-replace "/" "\\" projecte)) )
+            (if (or (string-suffix-p ".sln" projecte 't)
+                    (string-suffix-p ".csproj" projecte 't) )
+                (setq compile-command
+                      (concat pablo-buildvs-path
+                              " /p:Configuration=Debug " projecte  ))
+              (setq compile-command (concat "python " projecte)) ))
         (message "No project.sln or project.csproj or prepare.py was found")
         (setq compile-command orv) )))
   ;; any way, call the compile command.
