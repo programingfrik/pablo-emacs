@@ -340,12 +340,16 @@ path to that element."
       (if projecte
           (progn
             (when (equal 'windows-nt system-type)
-              (setq projecte (string-replace "/" "\\" projecte)) )
+              (setq projecte
+                    (concat "\"" (string-replace
+                                  "/" "\\" projecte)
+                            "\"")) )
             (if (or (string-suffix-p ".sln" projecte 't)
                     (string-suffix-p ".csproj" projecte 't) )
                 (setq compile-command
                       (concat pablo-buildvs-path
                               " /p:Configuration=Debug " projecte  ))
+              ;; TODO: investigar porque ejecutar prepare.py funciona de forma irregular en windows.
               (setq compile-command (concat "python " projecte)) ))
         (message "No project.sln or project.csproj or prepare.py was found")
         (setq compile-command orv) )))
