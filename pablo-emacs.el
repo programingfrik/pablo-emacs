@@ -327,10 +327,12 @@ project is not only what command to call but also the path to the
 element it needs to build the project, this function tries to guess the
 path to that element."
   (interactive)
+  ;; TODO: why does (get 'compile-command 'standard-value) is nil on a fresh emacs instance?
   (let ((scc (eval (car (get 'compile-command 'standard-value)))) ;; scc = standard compile command
         (orv compile-command) ;; orv = original value
         projecte) ;; projecte = project element
-    (when (or (equal compile-command "")
+    (when (or (not scc)
+              (equal compile-command "")
               (equal compile-command scc))
       (setq projecte (get-projecte
                       (expand-file-name default-directory)
